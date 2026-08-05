@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YugiProxy - Generatore di Proxy per Yu-Gi-Oh!</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- jsPDF for client-side PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-slate-950">
+
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-500 text-slate-950 p-2.5 rounded-xl font-black text-xl shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid fa-clone"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white">YugiProxy <span class="text-amber-500 text-xs px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 align-middle">Edison / Retro Ready</span></h1>
+                    <p class="text-xs text-slate-400">Generatore di proxy istantaneo multilingua</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="text-xs text-slate-400 hidden sm:inline">Supporta YGOPRODECK API</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left Panel: Controls & Input -->
+        <div class="lg:col-span-5 space-y-6">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none"></div>
+                
+                <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-amber-500"></i> Incolla la tua Decklist
+                </h2>
+
+                <!-- Language Selector -->
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Lingua Carte</label>
+                    <select id="langSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-amber-500 transition-colors">
+                        <option value="it">Italiano</option>
+                        <option value="en" selected>English</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="es">Español</option>
+                    </select>
+                </div>
+
+                <!-- Textarea -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="text-xs font-medium text-slate-400 uppercase tracking-wider">Formato Libero o Standard</label>
+                        <span class="text-[11px] text-slate-500">Es: 3 Drago Bianco Occhi Blu</span>
+                    </div>
+                    <textarea id="deckInput" rows="10" placeholder="3 Allure of Darkness&#10;2 Monster Reborn&#10;1 Dark Magician" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm font-mono text-slate-200 focus:outline-none focus:border-amber-500 transition-colors resize-y"></textarea>
+                </div>
+
+                <!-- Action Button -->
+                <button id="processBtn" onclick="processDeck()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 text-sm cursor-pointer">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Raccogli Carte & Anteprima
+                </button>
+            </div>
+
+            <!-- Export Panel -->
+            <div id="exportPanel" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl hidden">
+                <h3 class="text-md font-semibold text-white mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-file-pdf text-amber-500"></i> Genera PDF per la Stampa
+                </h3>
+                <p class="text-xs text-slate-400 mb-4">Il PDF verrà impaginato in griglia 3x3 su fogli A4 con il righello di calibrazione millimetrica integrato.</p>
+                <button onclick="generatePDF()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 text-sm cursor-pointer">
+                    <i class="fa-solid fa-download"></i> Scarica PDF (A4)
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Panel: Preview & Stats -->
+        <div class="lg:col-span-7 space-y-6">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl min-h-[500px] flex flex-col">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
+                    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-images text-amber-500"></i> Anteprima Carte
+                    </h2>
+                    <div id="cardCountBadge" class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-medium">
+                        0 carte caricate
+                    </div>
+                </div>
+
+                <!-- Status / Loading message -->
+                <div id="statusMessage" class="my-auto text-center py-12 text-slate-500">
+                    <i class="fa-solid fa-layer-group text-4xl mb-3 opacity-30"></i>
+                    <p class="text-sm">Incolla la tua lista a sinistra e clicca su "Raccogli Carte" per iniziare.</p>
+                </div>
+
+                <!-- Grid Preview container -->
+                <div id="cardGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto max-h-[600px] pr-1"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500 bg-slate-900/40">
+        <p>YugiProxy &bull; Sviluppato per la community di duellanti e formati retrò.</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        let resolvedCards = [];
+
+        async function processDeck() {
+            const text = document.getElementById('deckInput').value.trim();
+            const lang = document.getElementById('langSelect').value;
+            const statusMsg = document.getElementById('statusMessage');
+            const grid = document.getElementById('cardGrid');
+            const countBadge = document.getElementById('cardCountBadge');
+            const exportPanel = document.getElementById('exportPanel');
+
+            if (!text) {
+                alert('Inserisci almeno una carta nella lista!');
+                return;
+            }
+
+            const lines = text.split('\n');
+            let parsedItems = [];
+
+            for (let line of lines) {
+                line = line.trim();
+                if (!line || line.startsWith('#') || line.startsWith('//')) continue;
+
+                let qty = 1;
+                let cardName = line;
+
+                const leadingMatch = line.match(/^([0-9]+)[xX]?\s+(.+)$/);
+                const trailingMatch = line.match(/^(.+?)\s+[xX]([0-9]+)$/);
+
+                if (leadingMatch) {
+                    qty = parseInt(leadingMatch[1]);
+                    cardName = leadingMatch[2].trim();
+                } else if (trailingMatch) {
+                    cardName = trailingMatch[1].trim();
+                    qty = parseInt(trailingMatch[2]);
+                }
+
+                parsedItems.push({ name: cardName, qty: qty });
+            }
+
+            if (parsedItems.length === 0) {
+                alert('Nessuna carta valida trovata nella lista.');
+                return;
+            }
+
+            statusMsg.style.display = 'block';
+            statusMsg.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-amber-500"></i><p class="text-sm text-slate-300">Interrogazione database YGOPRODECK in corso...</p>';
+            grid.innerHTML = '';
+            exportPanel.classList.add('hidden');
+
+            resolvedCards = [];
+            let totalCardsCount = 0;
+
+            for (let item of parsedItems) {
+                try {
+                    const encodedName = encodeURIComponent(item.name);
+                    const response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}&language=${lang}`);
+                    
+                    if (!response.ok) {
+                        const fallbackResponse = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}&language=en`);
+                        if (!fallbackResponse.ok) continue;
+                        const fallbackData = await fallbackResponse.json();
+                        if (fallbackData.data && fallbackData.data.length > 0) {
+                            addCardData(fallbackData.data[0], item.qty);
+                            totalCardsCount += item.qty;
+                        }
+                        continue;
+                    }
+
+                    const data = await response.json();
+                    if (data.data && data.data.length > 0) {
+                        addCardData(data.data[0], item.qty);
+                        totalCardsCount += item.qty;
+                    }
+                } catch (err) {
+                    console.error('Errore recupero carta:', item.name, err);
+                }
+            }
+
+            statusMsg.style.display = 'none';
+            countBadge.innerText = `${totalCardsCount} proxy pronte`;
+
+            if (resolvedCards.length > 0) {
+                exportPanel.classList.remove('hidden');
+                renderGrid();
+            } else {
+                statusMsg.style.display = 'block';
+                statusMsg.innerHTML = '<p class="text-sm text-red-400">Nessuna carta trovata. Controlla l\'ortografia o prova in inglese.</p>';
+            }
+        }
+
+        function addCardData(cardObj, qty) {
+            const imgUrl = cardObj.card_images[0].image_url;
+            for (let i = 0; i < qty; i++) {
+                resolvedCards.push({
+                    name: cardObj.name,
+                    imgUrl: imgUrl
+                });
+            }
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('cardGrid');
+            grid.innerHTML = '';
+
+            resolvedCards.forEach((card, index) => {
+                const div = document.createElement('div');
+                div.className = 'relative bg-slate-950 border border-slate-800 rounded-xl overflow-hidden group aspect-[59/86] shadow-md';
+                div.innerHTML = `
+                    <img src="${card.imgUrl}" alt="${card.name}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-slate-950/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                        <span class="text-xs font-medium text-white truncate">${card.name}</span>
+                    </div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        async function getBase64ImageFromUrl(imageUrl) {
+            try {
+                const proxyUrl = "https://images.weserv.nl/?url=" + encodeURIComponent(imageUrl);
+                const response = await fetch(proxyUrl);
+                const blob = await response.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            } catch (e) {
+                console.error("CORS image fetch failed, trying direct...", e);
+                return imageUrl;
+            }
+        }
+
+        async function generatePDF() {
+            if (resolvedCards.length === 0) return;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const cardWidth = 59;
+            const cardHeight = 86;
+            const cols = 3;
+            const rows = 3;
+            const cardsPerPage = cols * rows;
+
+            const gridWidth = cols * cardWidth;
+            const gridHeight = rows * cardHeight;
+            const marginLeft = (210 - gridWidth) / 2;
+            const marginTop = (297 - gridHeight) / 2;
+
+            for (let i = 0; i < resolvedCards.length; i++) {
+                const pageIndex = Math.floor(i / cardsPerPage);
+                const posOnPage = i % cardsPerPage;
+
+                if (i > 0 && posOnPage === 0) {
+                    doc.addPage();
+                }
+
+                const r = Math.floor(posOnPage / cols);
+                const c = posOnPage % cols;
+
+                const x = marginLeft + (c * cardWidth);
+                const y = marginTop + (r * cardHeight);
+
+                const base64Img = await getBase64ImageFromUrl(resolvedCards[i].imgUrl);
+
+                try {
+                    doc.addImage(base64Img, 'JPG', x, y, cardWidth, cardHeight);
+                } catch (err) {
+                    console.error("Errore aggiunta immagine PDF:", err);
+                }
+
+                if (posOnPage === 0) {
+                    doc.setLineWidth(0.2);
+                    doc.setDrawColor(150, 150, 150);
+                    doc.line(5, 10, 15, 10);
+                    doc.setFontSize(8);
+                    doc.setTextColor(120, 120, 120);
+                    doc.text("1 cm (Scala 100%)", 5, 8);
+                }
+            }
+
+            doc.save('yugiproxy-deck.pdf');
+        }
+    </script>
+</body>
+</html>
