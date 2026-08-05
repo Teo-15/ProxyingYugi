@@ -161,6 +161,11 @@
                     <div id="banlistTitle" class="font-semibold flex items-center gap-1.5 text-red-400"><i class="fa-solid fa-triangle-exclamation"></i> Avvisi Banlist:</div>
                     <ul id="banlistList" class="list-disc list-inside space-y-0.5 text-[11px]"></ul>
                 </div>
+                <!-- Banlist OK Container -->
+                <div id="banlistOk" class="hidden bg-emerald-950/40 border border-emerald-900/50 rounded-xl p-3 text-xs text-emerald-300 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+                    <span>Nessuna violazione rilevata per la banlist selezionata.</span>
+                </div>
             </div>
 
             <!-- Preview Box -->
@@ -210,27 +215,28 @@
         let ydkCardIds = { main: [], extra: [], side: [] };
         let currentEditingCardRef = null;
 
-        // Mappa integrata di controllo per Edison Format (Marzo 2010) e GOAT Format (Aprile 2005)
-        // 0 = Bannata, 1 = Limitata, 2 = Semi-limitata
+        // Mappa robusta Edison Format (Marzo 2010) e GOAT Format (Aprile 2005) indicizzata con nomi inglesi standard
         const RETRO_BANLISTS = {
             edison: {
                 "pot of greed": 0, "graceful charity": 0, "confiscation": 0, "delinquent duo": 0,
                 "the forceful sentry": 0, "painful choice": 0, "snatch steal": 0, "harpie's feather duster": 0,
-                "heavy storm": 1, "mst": 1, "mystical space typhoon": 1, "brain control": 1,
+                "heavy storm": 1, "mystical space typhoon": 1, "brain control": 1,
                 "mind control": 2, "charge of the light brigade": 2, "solar recharge": 2,
                 "summoner monk": 1, "necrogardna": 1, "tragoedia": 1, "gorz the emissary of darkness": 1,
                 "monster reborn": 1, "dark hole": 0, "torrential tribute": 1, "mirror force": 1,
-                "solemn judgment": 2, "book of moon": 3, "bottomless trap hole": 2, "trap dustshoot": 1,
+                "solemn judgment": 2, "bottomless trap hole": 2, "trap dustshoot": 1,
                 "compulsory evacuation device": 3, "dimensional prison": 3, "call of the haunted": 1,
-                "future fusion": 1, "overload fusion": 1, "giant trunade": 1, "book of taiyou": 3
+                "future fusion": 1, "overload fusion": 1, "giant trunade": 1, "book of taiyou": 3,
+                "destiny draw": 2, "malicious": 2, "destiny hero - malicious": 2, "card destruction": 1,
+                "black rose dragon": 1, "brionac, dragon of the ice barrier": 1, "goyo guardian": 1
             },
             goat: {
                 "pot of greed": 0, "graceful charity": 0, "confiscation": 0, "delinquent duo": 0,
                 "the forceful sentry": 0, "painful choice": 0, "snatch steal": 1, "heavy storm": 1,
-                "mst": 2, "mystical space typhoon": 2, "monster reborn": 1, "premature burial": 1,
+                "mystical space typhoon": 2, "monster reborn": 1, "premature burial": 1,
                 "ring of destruction": 1, "mirror force": 1, "torrential tribute": 1, "solemn judgment": 3,
-                "tribe-infecting virus": 1, "BLS": 0, "black luster soldier - envoy of the beginning": 0,
-                "chaos empress dragon - envoy of the end": 0, "Yata-Garasu": 0
+                "tribe-infecting virus": 1, "black luster soldier - envoy of the beginning": 0,
+                "chaos empress dragon - envoy of the end": 0, "yata-garasu": 0
             }
         };
 
@@ -294,20 +300,26 @@
         async function fetchCardData(itemName, lang) {
             const encodedName = encodeURIComponent(itemName);
             let response = null;
+            let cardObj = null;
 
             try {
                 // Tentativo 1: Con la lingua selezionata
                 response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}&language=${lang}`);
-                if (!response.ok) {
-                    // Tentativo 2: Fallback diretto in inglese
-                    response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.data && data.data.length > 0) cardObj = data.data[0];
                 }
 
-                if (!response.ok) return null;
+                // Tentativo 2: Fallback in inglese se fallisce
+                if (!cardObj) {
+                    response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.data && data.data.length > 0) cardObj = data.data[0];
+                    }
+                }
 
-                const data = await response.json();
-                if (data.data && data.data.length > 0) {
-                    const cardObj = data.data[0];
+                if (cardObj) {
                     const type = cardObj.type ? cardObj.type.toLowerCase() : '';
                     let category = 'monster';
                     if (type.includes('spell') || type.includes('magia')) {
@@ -329,29 +341,27 @@
                         rarity = cardObj.card_sets[0].set_rarity;
                     }
 
-                    // Ricavo limiti API ufficiali se presenti
                     let limits = { edison: 3, tcg: 3, goat: 3 };
-                    if (cardObj.banlist_info) {
-                        const bInfo = cardObj.banlist_info;
-                        if (bInfo.ban_tcg) {
-                            if (bInfo.ban_tcg === 'Banned') limits.tcg = 0;
-                            else if (bInfo.ban_tcg === 'Limited') limits.tcg = 1;
-                            else if (bInfo.ban_tcg === 'Semi-Limited') limits.tcg = 2;
-                        }
-                        if (bInfo.ban_goat) {
-                            if (bInfo.ban_goat === 'Banned') limits.goat = 0;
-                            else if (bInfo.ban_goat === 'Limited') limits.goat = 1;
-                            else if (bInfo.ban_goat === 'Semi-Limited') limits.goat = 2;
-                        }
-                    }
+                    
+                    // Controlliamo sia il nome inglese ufficiale (cardObj.name) sia eventuali corrispondenze parziali
+                    const engName = (cardObj.name || "").toLowerCase();
+                    const searchedName = itemName.toLowerCase();
 
-                    // Sovrascrivo con la mappa retro specifica se disponibile
-                    const lowName = cardObj.name.toLowerCase();
-                    if (RETRO_BANLISTS.edison[lowName] !== undefined) {
-                        limits.edison = RETRO_BANLISTS.edison[lowName];
-                    }
-                    if (RETRO_BANLISTS.goat[lowName] !== undefined) {
-                        limits.goat = RETRO_BANLISTS.goat[lowName];
+                    ['edison', 'goat'].forEach(fmt => {
+                        const banMap = RETRO_BANLISTS[fmt];
+                        if (banMap[engName] !== undefined) {
+                            limits[fmt] = banMap[engName];
+                        } else if (banMap[searchedName] !== undefined) {
+                            limits[fmt] = banMap[searchedName];
+                        }
+                    });
+
+                    // Controllo banlist TCG ufficiale dall'API se presente
+                    if (cardObj.banlist_info && cardObj.banlist_info.ban_tcg) {
+                        const bTcg = cardObj.banlist_info.ban_tcg;
+                        if (bTcg === 'Banned') limits.tcg = 0;
+                        else if (bTcg === 'Limited') limits.tcg = 1;
+                        else if (bTcg === 'Semi-Limited') limits.tcg = 2;
                     }
 
                     return {
@@ -492,10 +502,13 @@
             const warningBox = document.getElementById('banlistWarnings');
             const warningTitle = document.getElementById('banlistTitle');
             const warningList = document.getElementById('banlistList');
+            const okBox = document.getElementById('banlistOk');
+            
             warningList.innerHTML = '';
 
             if (format === 'none') {
                 warningBox.classList.add('hidden');
+                okBox.classList.add('hidden');
                 return;
             }
 
@@ -520,6 +533,7 @@
 
             if (violations.length > 0) {
                 warningBox.classList.remove('hidden');
+                okBox.classList.add('hidden');
                 violations.forEach(v => {
                     const li = document.createElement('li');
                     li.innerHTML = v;
@@ -527,6 +541,7 @@
                 });
             } else {
                 warningBox.classList.add('hidden');
+                okBox.classList.remove('hidden');
             }
         }
 
