@@ -117,6 +117,15 @@
                 </button>
             </div>
 
+            <!-- SPAZIO PUBBLICITARIO 1 (Sidebar Sinistra) -->
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 text-center text-xs text-slate-500">
+                <span class="block text-[10px] uppercase tracking-wider mb-2 text-slate-600">Spazio Sponsorizzato</span>
+                <!-- Inserisci qui il tag script/iframe del circuito pubblicitario es. Google AdSense -->
+                <div class="min-h-[100px] flex items-center justify-center border border-dashed border-slate-800 rounded-xl">
+                    Banner Pubblicitario
+                </div>
+            </div>
+
             <!-- Export Panel -->
             <div id="exportPanel" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl hidden space-y-4">
                 <h3 class="text-md font-semibold text-white flex items-center gap-2">
@@ -126,7 +135,7 @@
                 <div class="flex items-center gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
                     <input type="checkbox" id="includeBacks" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
                     <label for="includeBacks" class="text-xs text-slate-300 cursor-pointer select-none">
-                        Includi pagine con il **retro delle carte** (per stampa fronte-retro)
+                        Includi pagine con il retro delle carte (per stampa fronte-retro)
                     </label>
                 </div>
 
@@ -198,6 +207,17 @@
 
     </main>
 
+    <!-- SPAZIO PUBBLICITARIO 2 (Footer / Sotto il contenuto principale) -->
+    <div class="max-w-7xl mx-auto px-4 w-full mb-8">
+        <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 text-center text-xs text-slate-500">
+            <span class="block text-[10px] uppercase tracking-wider mb-2 text-slate-600">Spazio Sponsorizzato</span>
+            <!-- Inserisci qui il tag script/iframe del circuito pubblicitario -->
+            <div class="min-h-[90px] flex items-center justify-center border border-dashed border-slate-800 rounded-xl">
+                Banner Pubblicitario Orizzontale
+            </div>
+        </div>
+    </div>
+
     <!-- Modal per Selezione Artwork -->
     <div id="artworkModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
@@ -223,7 +243,6 @@
         let ydkCardIds = { main: [], extra: [], side: [] };
         let currentEditingCardRef = null;
 
-        // Mappa estesa di banlist storiche e competitive (Edison, GOAT, HAT, Tengu, ROC, Advanced 2020)
         const RETRO_BANLISTS = {
             edison: {
                 "pot of greed": 0, "graceful charity": 0, "confiscation": 0, "delinquent duo": 0,
@@ -257,7 +276,7 @@
             },
             tengu: {
                 "reborn tengu": 3, "spore": 1, "glow-up bulb": 1, "debris dragon": 2,
-                "lonefire blossom": 1, "glow-up bulb": 1, "mind control": 1, "heavy storm": 1,
+                "lonefire blossom": 1, "mind control": 1, "heavy storm": 1,
                 "dark hole": 1, "monster reborn": 1, "mystical space typhoon": 2,
                 "solemn judgment": 1, "solemn warning": 2, "torrential tribute": 1,
                 "traptrix dionaea": 0, "brionac, dragon of the ice barrier": 1,
@@ -278,7 +297,6 @@
             }
         };
 
-        // Mappa di traduzione/alias comuni (italiano -> chiave inglese ufficiale)
         const CARD_ALIASES = {
             "spolverino dell'arpia": "harpie's feather duster",
             "spolverino dell' arpia": "harpie's feather duster",
@@ -357,14 +375,12 @@
             let cardObj = null;
 
             try {
-                // Tentativo 1: Con la lingua selezionata
                 response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}&language=${lang}`);
                 if (response.ok) {
                     const data = await response.json();
                     if (data.data && data.data.length > 0) cardObj = data.data[0];
                 }
 
-                // Tentativo 2: Fallback in inglese se fallisce
                 if (!cardObj) {
                     response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}`);
                     if (response.ok) {
@@ -412,7 +428,6 @@
                         }
                     });
 
-                    // Controllo banlist TCG ufficiale dall'API se presente
                     if (cardObj.banlist_info && cardObj.banlist_info.ban_tcg) {
                         const bTcg = cardObj.banlist_info.ban_tcg;
                         if (bTcg === 'Banned') limits.tcg = 0;
@@ -483,7 +498,6 @@
             let cardOccurrences = {};
             let cardLimitsMap = {};
 
-            // Main Deck
             let mainResolved = [];
             for (let item of parsedMain) {
                 const cardData = await fetchCardData(item.name, lang);
@@ -506,7 +520,6 @@
             mainResolved.sort((a, b) => catOrder[a.category] - catOrder[b.category]);
             deckSections.main = mainResolved;
 
-            // Extra Deck
             for (let item of parsedExtra) {
                 const cardData = await fetchCardData(item.name, lang);
                 if (cardData) {
@@ -520,7 +533,6 @@
                 }
             }
 
-            // Side Deck
             for (let item of parsedSide) {
                 const cardData = await fetchCardData(item.name, lang);
                 if (cardData) {
