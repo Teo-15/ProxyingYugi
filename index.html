@@ -130,7 +130,7 @@
                 </button>
             </div>
 
-            <!-- SPAZIO PUBBLICITARIO 1 (Sidebar Sinistra) -->
+            <!-- SPAZIO PUBBLICITARIO 1 -->
             <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 text-center text-xs text-slate-500">
                 <span id="t-sponsor1" class="block text-[10px] uppercase tracking-wider mb-2 text-slate-600">Spazio Sponsorizzato</span>
                 <div class="min-h-[100px] flex items-center justify-center border border-dashed border-slate-800 rounded-xl overflow-hidden p-2">
@@ -185,6 +185,13 @@
                         <span id="statTraps" class="text-lg font-bold text-pink-400">0</span>
                     </div>
                 </div>
+
+                <!-- Typography / Typos Warning Container -->
+                <div id="typoWarnings" class="hidden bg-amber-950/40 border border-amber-900/50 rounded-xl p-3 text-xs text-amber-300 space-y-1">
+                    <div class="font-semibold flex items-center gap-1.5 text-amber-400"><i class="fa-solid fa-spell-check"></i> Possibili errori di battitura rilevati:</div>
+                    <div id="typoList" class="space-y-1.5 text-[11px]"></div>
+                </div>
+
                 <!-- Banlist Alert Container -->
                 <div id="banlistWarnings" class="hidden bg-red-950/40 border border-red-900/50 rounded-xl p-3 text-xs text-red-300 space-y-1">
                     <div id="banlistTitle" class="font-semibold flex items-center gap-1.5 text-red-400"><i class="fa-solid fa-triangle-exclamation"></i> Avvisi Banlist:</div>
@@ -219,7 +226,7 @@
 
     </main>
 
-    <!-- SPAZIO PUBBLICITARIO 2 (Footer) -->
+    <!-- SPAZIO PUBBLICITARIO 2 -->
     <div class="max-w-7xl mx-auto px-4 w-full mb-8">
         <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 text-center text-xs text-slate-500">
             <span id="t-sponsor2" class="block text-[10px] uppercase tracking-wider mb-2 text-slate-600">Spazio Sponsorizzato</span>
@@ -410,7 +417,6 @@
             document.getElementById('t-modaldesc').innerText = t.modaldesc;
             document.getElementById('t-footertext').innerHTML = t.footertext;
             
-            // Sincronizza anche la lingua di ricerca carte di default se l'utente vuole
             document.getElementById('langSelect').value = lang;
             localStorage.setItem('yugiproxy_uilang', lang);
         }
@@ -418,6 +424,7 @@
         let deckSections = { main: [], extra: [], side: [] };
         let ydkCardIds = { main: [], extra: [], side: [] };
         let currentEditingCardRef = null;
+        let cardListCache = null; // Cache per suggerimenti e correzione errori
 
         const RETRO_BANLISTS = {
             edison: {
@@ -513,7 +520,61 @@
             if (localStorage.getItem('yugiproxy_main')) document.getElementById('mainInput').value = localStorage.getItem('yugiproxy_main');
             if (localStorage.getItem('yugiproxy_extra')) document.getElementById('extraInput').value = localStorage.getItem('yugiproxy_extra');
             if (localStorage.getItem('yugiproxy_side')) document.getElementById('sideInput').value = localStorage.getItem('yugiproxy_side');
+            
+            preloadCardNames();
         });
+
+        async function preloadCardNames() {
+            try {
+                const res = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=LOB'); // o simile, oppure scarichiamo i nomi base
+                // Per avere tutti i nomi rapidamente usiamo l'endpoint con solo i nomi
+                const resNames = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php?protein=all');
+                if(resNames.ok) {
+                    const data = await resNames.json();
+                    cardListCache = data.data.map(c => c.name);
+                }
+            } catch(e) {
+                // Fallback leggero se fallisce
+                cardListCache = [];
+            }
+        }
+
+        // Funzione di distanza di Levenshtein per calcolare la somiglianza tra parole (correzione battiture)
+        function getLevenshteinDistance(a, b) {
+            if (a.length === 0) return b.length;
+            if (b.length === 0) return a.length;
+            let matrix = [];
+            for (let i = 0; i <= b.length; i++) { matrix[i] = [i]; }
+            for (let j = 0; j <= a.length; j++) { matrix[0][j] = j; }
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
+                    }
+                }
+            }
+            return matrix[b.length][a.length];
+        }
+
+        function findClosestCardName(inputName) {
+            if (!cardListCache || cardListCache.length === 0) return null;
+            let closest = null;
+            let minDistance = 999;
+            const cleanInput = inputName.toLowerCase().trim();
+            
+            for (let cardName of cardListCache) {
+                const cleanCard = cardName.toLowerCase();
+                if (cleanCard === cleanInput) return cardName; // Match perfetto
+                const dist = getLevenshteinDistance(cleanInput, cleanCard);
+                if (dist < minDistance && dist <= 4) { // Soglia tolleranza errore battitura
+                    minDistance = dist;
+                    closest = cardName;
+                }
+            }
+            return closest;
+        }
 
         function clearAll() {
             document.getElementById('mainInput').value = '';
@@ -679,54 +740,49 @@
             let countTraps = 0;
             let cardOccurrences = {};
             let cardLimitsMap = {};
+            let unknownCards = [];
 
-            let mainResolved = [];
-            for (let item of parsedMain) {
-                const cardData = await fetchCardData(item.name, lang);
-                if (cardData) {
-                    if (cardData.category === 'monster') countMonsters += item.qty;
-                    else if (cardData.category === 'spell') countSpells += item.qty;
-                    else if (cardData.category === 'trap') countTraps += item.qty;
+            // Helper per elaborare le sezioni controllando errori di battitura
+            async function processSection(itemsArray, targetSection, targetIdArray) {
+                for (let item of itemsArray) {
+                    let cardData = await fetchCardData(item.name, lang);
+                    if (!cardData) {
+                        // Cerca suggerimento per errore di battitura
+                        const suggestion = findClosestCardName(item.name);
+                        if (suggestion) {
+                            unknownCards.push({ typed: item.name, suggested: suggestion });
+                            // Riprova con il nome corretto suggerito
+                            cardData = await fetchCardData(suggestion, lang);
+                        }
+                    }
 
-                    cardOccurrences[cardData.name] = (cardOccurrences[cardData.name] || 0) + item.qty;
-                    cardLimitsMap[cardData.name] = cardData.limits;
+                    if (cardData) {
+                        if (targetSection === deckSections.main) {
+                            if (cardData.category === 'monster') countMonsters += item.qty;
+                            else if (cardData.category === 'spell') countSpells += item.qty;
+                            else if (cardData.category === 'trap') countTraps += item.qty;
+                        }
 
-                    for (let i = 0; i < item.qty; i++) {
-                        mainResolved.push({ ...cardData });
-                        ydkCardIds.main.push(cardData.id);
-                        totalCardsCount++;
+                        cardOccurrences[cardData.name] = (cardOccurrences[cardData.name] || 0) + item.qty;
+                        cardLimitsMap[cardData.name] = cardData.limits;
+
+                        for (let i = 0; i < item.qty; i++) {
+                            targetSection.push({ ...cardData });
+                            targetIdArray.push(cardData.id);
+                            totalCardsCount++;
+                        }
                     }
                 }
             }
+
+            let mainResolved = [];
+            await processSection(parsedMain, mainResolved, ydkCardIds.main);
             const catOrder = { monster: 0, spell: 1, trap: 2 };
             mainResolved.sort((a, b) => catOrder[a.category] - catOrder[b.category]);
             deckSections.main = mainResolved;
 
-            for (let item of parsedExtra) {
-                const cardData = await fetchCardData(item.name, lang);
-                if (cardData) {
-                    cardOccurrences[cardData.name] = (cardOccurrences[cardData.name] || 0) + item.qty;
-                    cardLimitsMap[cardData.name] = cardData.limits;
-                    for (let i = 0; i < item.qty; i++) {
-                        deckSections.extra.push({ ...cardData });
-                        ydkCardIds.extra.push(cardData.id);
-                        totalCardsCount++;
-                    }
-                }
-            }
-
-            for (let item of parsedSide) {
-                const cardData = await fetchCardData(item.name, lang);
-                if (cardData) {
-                    cardOccurrences[cardData.name] = (cardOccurrences[cardData.name] || 0) + item.qty;
-                    cardLimitsMap[cardData.name] = cardData.limits;
-                    for (let i = 0; i < item.qty; i++) {
-                        deckSections.side.push({ ...cardData });
-                        ydkCardIds.side.push(cardData.id);
-                        totalCardsCount++;
-                    }
-                }
-            }
+            await processSection(parsedExtra, deckSections.extra, ydkCardIds.extra);
+            await processSection(parsedSide, deckSections.side, ydkCardIds.side);
 
             statusMsg.style.display = 'none';
             countBadge.innerText = `${totalCardsCount} proxy pronte`;
@@ -740,12 +796,47 @@
                 document.getElementById('statSpells').innerText = countSpells;
                 document.getElementById('statTraps').innerText = countTraps;
 
+                checkTyposAndSuggest(unknownCards);
                 checkBanlistViolations(cardOccurrences, cardLimitsMap, format);
                 renderPreview();
             } else {
                 statusMsg.style.display = 'block';
                 statusMsg.innerHTML = '<p class="text-sm text-red-400"><i class="fa-solid fa-circle-exclamation"></i> Nessuna carta trovata. Verifica l\'ortografia o prova a selezionare "English" come lingua.</p>';
             }
+        }
+
+        function checkTyposAndSuggest(unknownCards) {
+            const typoBox = document.getElementById('typoWarnings');
+            const typoList = document.getElementById('typoList');
+            typoList.innerHTML = '';
+
+            if (unknownCards.length === 0) {
+                typoBox.classList.add('hidden');
+                return;
+            }
+
+            typoBox.classList.remove('hidden');
+            unknownCards.forEach(uc => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between bg-amber-950/60 p-2 rounded-lg border border-amber-900/40';
+                div.innerHTML = `
+                    <span>Hai scritto <strong>"${uc.typed}"</strong>. Forse intendevi <strong class="text-amber-200">"${uc.suggested}"</strong>?</span>
+                    <button onclick="applyTypoCorrection('${uc.typed.replace(/'/g, "\\'")}', '${uc.suggested.replace(/'/g, "\\'")}')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-bold px-2.5 py-1 rounded transition-all cursor-pointer">
+                        Correggi
+                    </button>
+                `;
+                typoList.appendChild(div);
+            });
+        }
+
+        function applyTypoCorrection(typed, suggested) {
+            ['mainInput', 'extraInput', 'sideInput'].forEach(id => {
+                const ta = document.getElementById(id);
+                if (ta.value.includes(typed)) {
+                    ta.value = ta.value.replace(new RegExp(typed, 'gi'), suggested);
+                }
+            });
+            processDeck();
         }
 
         function checkBanlistViolations(occurrences, limitsMap, format) {
