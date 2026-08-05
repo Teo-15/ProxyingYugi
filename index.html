@@ -116,7 +116,6 @@
                     <i class="fa-solid fa-file-export text-amber-500"></i> Esportazione
                 </h3>
                 
-                <!-- Checkbox per i retro -->
                 <div class="flex items-center gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
                     <input type="checkbox" id="includeBacks" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
                     <label for="includeBacks" class="text-xs text-slate-300 cursor-pointer select-none">
@@ -176,13 +175,11 @@
                     </div>
                 </div>
 
-                <!-- Status / Loading message -->
                 <div id="statusMessage" class="my-auto text-center py-12 text-slate-500">
                     <i class="fa-solid fa-layer-group text-4xl mb-3 opacity-30"></i>
                     <p class="text-sm">Compila i campi a sinistra e clicca su "Raccogli Carte" per iniziare.</p>
                 </div>
 
-                <!-- Sections Container -->
                 <div id="previewContainer" class="space-y-6 overflow-y-auto max-h-[600px] pr-1"></div>
             </div>
         </div>
@@ -272,14 +269,18 @@
         }
 
         async function fetchCardData(itemName, lang) {
+            const encodedName = encodeURIComponent(itemName);
+            let response = null;
+
             try {
-                const encodedName = encodeURIComponent(itemName);
-                let response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}&language=${lang}`);
-                
+                // Tentativo 1: Con la lingua selezionata dall'utente
+                response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}&language=${lang}`);
                 if (!response.ok) {
+                    // Tentativo 2: Fallback diretto sul database globale (Inglese) se la lingua locale fallisce
                     response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}`);
-                    if (!response.ok) return null;
                 }
+
+                if (!response.ok) return null;
 
                 const data = await response.json();
                 if (data.data && data.data.length > 0) {
@@ -305,19 +306,10 @@
                         rarity = cardObj.card_sets[0].set_rarity;
                     }
 
-                    // Limiti predefiniti a 3 (libera)
-                    let limits = {
-                        edison: 3,
-                        tcg: 3,
-                        ocg: 3,
-                        goat: 3
-                    };
+                    let limits = { edison: 3, tcg: 3, ocg: 3, goat: 3 };
 
-                    // Lettura sicura da banlist_info fornito dall'API
                     if (cardObj.banlist_info) {
                         const bInfo = cardObj.banlist_info;
-                        
-                        // Mappatura formati API YGOPRODECK
                         ['edison', 'tcg', 'ocg', 'goat'].forEach(fmt => {
                             const val = bInfo[`ban_${fmt}`];
                             if (val) {
@@ -339,7 +331,7 @@
                     };
                 }
             } catch (err) {
-                console.error('Errore recupero carta:', itemName, err);
+                console.error('Errore di rete o API durante il recupero della carta:', itemName, err);
             }
             return null;
         }
@@ -391,7 +383,7 @@
             let cardOccurrences = {};
             let cardLimitsMap = {};
 
-            // Process Main Deck with sorting
+            // Main Deck
             let mainResolved = [];
             for (let item of parsedMain) {
                 const cardData = await fetchCardData(item.name, lang);
@@ -404,8 +396,7 @@
                     cardLimitsMap[cardData.name] = cardData.limits;
 
                     for (let i = 0; i < item.qty; i++) {
-                        let instance = { ...cardData };
-                        mainResolved.push(instance);
+                        mainResolved.push({ ...cardData });
                         ydkCardIds.main.push(cardData.id);
                         totalCardsCount++;
                     }
@@ -415,30 +406,28 @@
             mainResolved.sort((a, b) => catOrder[a.category] - catOrder[b.category]);
             deckSections.main = mainResolved;
 
-            // Process Extra Deck
+            // Extra Deck
             for (let item of parsedExtra) {
                 const cardData = await fetchCardData(item.name, lang);
                 if (cardData) {
                     cardOccurrences[cardData.name] = (cardOccurrences[cardData.name] || 0) + item.qty;
                     cardLimitsMap[cardData.name] = cardData.limits;
                     for (let i = 0; i < item.qty; i++) {
-                        let instance = { ...cardData };
-                        deckSections.extra.push(instance);
+                        deckSections.extra.push({ ...cardData });
                         ydkCardIds.extra.push(cardData.id);
                         totalCardsCount++;
                     }
                 }
             }
 
-            // Process Side Deck
+            // Side Deck
             for (let item of parsedSide) {
                 const cardData = await fetchCardData(item.name, lang);
                 if (cardData) {
                     cardOccurrences[cardData.name] = (cardOccurrences[cardData.name] || 0) + item.qty;
                     cardLimitsMap[cardData.name] = cardData.limits;
                     for (let i = 0; i < item.qty; i++) {
-                        let instance = { ...cardData };
-                        deckSections.side.push(instance);
+                        deckSections.side.push({ ...cardData });
                         ydkCardIds.side.push(cardData.id);
                         totalCardsCount++;
                     }
@@ -461,7 +450,7 @@
                 renderPreview();
             } else {
                 statusMsg.style.display = 'block';
-                statusMsg.innerHTML = '<p class="text-sm text-red-400">Nessuna carta trovata. Controlla l\'ortografia.</p>';
+                statusMsg.innerHTML = '<p class="text-sm text-red-400"><i class="fa-solid fa-circle-exclamation"></i> Nessuna carta trovata. Verifica l\'ortografia o prova a selezionare "English" come lingua.</p>';
             }
         }
 
@@ -532,10 +521,10 @@
                 container.appendChild(sectionDiv);
 
                 const grid = sectionDiv.querySelector(`#grid-${sec.key}`);
-                sec.items.forEach((card, idx) => {
+                sec.items.forEach((card) => {
                     const cardDiv = document.createElement('div');
                     cardDiv.className = 'relative bg-slate-950 border border-slate-800 rounded-xl overflow-hidden group aspect-[59/86] shadow-md cursor-pointer';
-                    cardDiv.title = "Clicca per cambiare artwork o vedere la rarità";
+                    cardDiv.title = "Clicca per cambiare artwork";
                     cardDiv.onclick = () => openArtworkModal(card);
                     cardDiv.innerHTML = `
                         <img src="${card.imgUrl}" alt="${card.name}" class="w-full h-full object-cover">
@@ -610,7 +599,7 @@
             const shareUrl = `${window.location.origin}${window.location.pathname}?deck=${encoded}`;
             
             navigator.clipboard.writeText(shareUrl).then(() => {
-                alert('Link copiato negli appunti! Mandalo pure ai tuoi amici.');
+                alert('Link copiato negli appunti!');
             }).catch(() => {
                 prompt('Copia questo link:', shareUrl);
             });
@@ -628,7 +617,6 @@
                     reader.readAsDataURL(blob);
                 });
             } catch (e) {
-                console.error("CORS image fetch failed, trying direct...", e);
                 return imageUrl;
             }
         }
@@ -693,7 +681,7 @@
                 const cardBackUrl = "https://images.ygoprodeck.com/images/other/card-back.jpg";
                 const base64Back = await getBase64ImageFromUrl(cardBackUrl);
 
-                for (let p = 0; p < totalPages: p++) { // Nota: correzione minore sintassi
+                for (let p = 0; p < totalPages; p++) {
                     doc.addPage();
                     for (let r = 0; r < rows; r++) {
                         for (let c = 0; c < cols; c++) {
