@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YugiProxy - Generatore di Proxy per Yu-Gi-Oh!</title>
+    <title id="t-pagetitle">YugiProxy - Generatore di Proxy per Yu-Gi-Oh!</title>
     
     <!-- Google AdSense Verification & Ads Script -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9384514814774887" crossorigin="anonymous"></script>
@@ -17,24 +17,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
-        /* Nasconde il banner nativo di Google Translate */
-        .goog-te-banner-frame.skiptranslate { display: none !important; }
-        body { top: 0px !important; }
-        #goog-gt-tt { display: none !important; }
-        .goog-tooltip { display: none !important; }
-        .goog-tooltip:hover { display: none !important; }
-        .goog-text-highlight { background-color: transparent !important; box-shadow: none !important; }
-        /* Stile personalizzato per il widget Google Translate */
-        .goog-te-combo {
-            background-color: #020617 !important;
-            color: #cbd5e1 !important;
-            border: 1px solid #1e293b !important;
-            padding: 6px 10px !important;
-            border-radius: 0.75rem !important;
-            font-size: 0.75rem !important;
-            outline: none !important;
-            cursor: pointer;
-        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-slate-950">
@@ -48,15 +30,21 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold tracking-tight text-white">YugiProxy <span class="text-amber-500 text-xs px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 align-middle">Multi-Banlist Ready</span></h1>
-                    <p class="text-xs text-slate-400">Con selettore formati storici e controllo restrizioni</p>
+                    <p id="t-subtitle" class="text-xs text-slate-400">Con selettore formati storici e controllo restrizioni</p>
                 </div>
             </div>
             <div class="flex items-center space-x-3">
-                <!-- Selettore Lingua Interfaccia (Google Translate Widget) -->
-                <div id="google_translate_element" class="hidden sm:block"></div>
+                <!-- Selettore Lingua Interfaccia Nativo -->
+                <select id="uiLangSelect" onchange="changeUILanguage(this.value)" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500 cursor-pointer">
+                    <option value="it" selected>🇮🇹 Italiano</option>
+                    <option value="en">🇬🇧 English</option>
+                    <option value="fr">🇫🇷 Français</option>
+                    <option value="de">🇩🇪 Deutsch</option>
+                    <option value="es">🇪🇸 Español</option>
+                </select>
 
                 <button onclick="shareDeck()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer">
-                    <i class="fa-solid fa-share-nodes text-amber-500"></i> Condividi
+                    <i class="fa-solid fa-share-nodes text-amber-500"></i> <span id="t-share">Condividi</span>
                 </button>
             </div>
         </div>
@@ -72,27 +60,27 @@
                 
                 <div class="flex justify-between items-center">
                     <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-list-check text-amber-500"></i> Inserisci Decklist
+                        <i class="fa-solid fa-list-check text-amber-500"></i> <span id="t-insertdeck">Inserisci Decklist</span>
                     </h2>
                     <button onclick="clearAll()" class="text-xs text-slate-400 hover:text-red-400 transition-colors flex items-center gap-1 cursor-pointer">
-                        <i class="fa-solid fa-trash-can"></i> Pulisci tutto
+                        <i class="fa-solid fa-trash-can"></i> <span id="t-clearall">Pulisci tutto</span>
                     </button>
                 </div>
 
                 <!-- Formato Banlist Selector -->
                 <div>
-                    <label class="block text-xs font-medium text-amber-400 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
+                    <label id="t-formatlabel" class="block text-xs font-medium text-amber-400 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
                         <i class="fa-solid fa-scale-balanced"></i> Formato / Banlist di Controllo
                     </label>
                     <select id="formatSelect" onchange="processDeck()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-amber-300 font-medium focus:outline-none focus:border-amber-500 transition-colors cursor-pointer">
-                        <optgroup label="Formati Retrò & Storici">
-                            <option value="edison" selected>Edison Format (Marzo 2010)</option>
+                        <optgroup label="Formati Retrò & Storici" id="t-opt-retro">
+                            <option value="edison">Edison Format (Marzo 2010)</option>
                             <option value="goat">GOAT Format (Aprile 2005)</option>
                             <option value="hat">HAT Format (Luglio 2014)</option>
                             <option value="tengu">Tengu Plant (Settembre 2011)</option>
                             <option value="roc">Reaper Format / ROC (Settembre 2006)</option>
                         </optgroup>
-                        <optgroup label="Formati Moderni & Standard">
+                        <optgroup label="Formati Moderni & Standard" id="t-opt-modern">
                             <option value="tcg">TCG (Avanzato Attuale)</option>
                             <option value="advanced_2020">Advanced 2020 (Master Rule 2020)</option>
                             <option value="none">Nessun controllo banlist</option>
@@ -102,7 +90,7 @@
 
                 <!-- Language Selector -->
                 <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Lingua di Ricerca Testo Carte</label>
+                    <label id="t-cardlanglabel" class="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Lingua di Ricerca Testo Carte</label>
                     <select id="langSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-amber-500 transition-colors cursor-pointer">
                         <option value="it" selected>Italiano</option>
                         <option value="en">English</option>
@@ -138,13 +126,13 @@
 
                 <!-- Action Button -->
                 <button id="processBtn" onclick="processDeck()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 text-sm cursor-pointer mt-2">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Raccogli Carte & Anteprima
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> <span id="t-collectbtn">Raccogli Carte & Anteprima</span>
                 </button>
             </div>
 
             <!-- SPAZIO PUBBLICITARIO 1 (Sidebar Sinistra) -->
             <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 text-center text-xs text-slate-500">
-                <span class="block text-[10px] uppercase tracking-wider mb-2 text-slate-600">Spazio Sponsorizzato</span>
+                <span id="t-sponsor1" class="block text-[10px] uppercase tracking-wider mb-2 text-slate-600">Spazio Sponsorizzato</span>
                 <div class="min-h-[100px] flex items-center justify-center border border-dashed border-slate-800 rounded-xl overflow-hidden p-2">
                     <span class="text-[11px] text-slate-600">Banner Sidebar AdSense</span>
                 </div>
@@ -153,19 +141,19 @@
             <!-- Export Panel -->
             <div id="exportPanel" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl hidden space-y-4">
                 <h3 class="text-md font-semibold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-file-export text-amber-500"></i> Esportazione
+                    <i class="fa-solid fa-file-export text-amber-500"></i> <span id="t-exporttitle">Esportazione</span>
                 </h3>
                 
                 <div class="flex items-center gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
                     <input type="checkbox" id="includeBacks" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
-                    <label for="includeBacks" class="text-xs text-slate-300 cursor-pointer select-none">
+                    <label id="t-includebacks" for="includeBacks" class="text-xs text-slate-300 cursor-pointer select-none">
                         Includi pagine con il retro delle carte (per stampa fronte-retro)
                     </label>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
                     <button onclick="generatePDF()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-3 rounded-xl transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 text-xs cursor-pointer">
-                        <i class="fa-solid fa-file-pdf"></i> Scarica PDF
+                        <i class="fa-solid fa-file-pdf"></i> <span id="t-downloadpdf">Scarica PDF</span>
                     </button>
                     <button onclick="downloadYDK()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-3 px-3 rounded-xl transition-all border border-slate-700 flex items-center justify-center gap-2 text-xs cursor-pointer">
                         <i class="fa-solid fa-file-lines"></i> File .YDK
@@ -181,19 +169,19 @@
             <div id="statsBox" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl hidden space-y-3">
                 <div class="grid grid-cols-4 gap-2 text-center">
                     <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
-                        <span class="block text-[10px] text-slate-400 uppercase tracking-wider">Totali</span>
+                        <span id="t-stat-total" class="block text-[10px] text-slate-400 uppercase tracking-wider">Totali</span>
                         <span id="statTotal" class="text-lg font-bold text-white">0</span>
                     </div>
                     <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
-                        <span class="block text-[10px] text-blue-400 uppercase tracking-wider">Mostri</span>
+                        <span id="t-stat-monsters" class="block text-[10px] text-blue-400 uppercase tracking-wider">Mostri</span>
                         <span id="statMonsters" class="text-lg font-bold text-blue-400">0</span>
                     </div>
                     <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
-                        <span class="block text-[10px] text-emerald-400 uppercase tracking-wider">Magie</span>
+                        <span id="t-stat-spells" class="block text-[10px] text-emerald-400 uppercase tracking-wider">Magie</span>
                         <span id="statSpells" class="text-lg font-bold text-emerald-400">0</span>
                     </div>
                     <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
-                        <span class="block text-[10px] text-pink-400 uppercase tracking-wider">Trappole</span>
+                        <span id="t-stat-traps" class="block text-[10px] text-pink-400 uppercase tracking-wider">Trappole</span>
                         <span id="statTraps" class="text-lg font-bold text-pink-400">0</span>
                     </div>
                 </div>
@@ -205,14 +193,14 @@
                 <!-- Banlist OK Container -->
                 <div id="banlistOk" class="hidden bg-emerald-950/40 border border-emerald-900/50 rounded-xl p-3 text-xs text-emerald-300 flex items-center gap-2">
                     <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
-                    <span>Nessuna violazione rilevata per la banlist selezionata.</span>
+                    <span id="t-banlist-ok">Nessuna violazione rilevata per la banlist selezionata.</span>
                 </div>
             </div>
 
             <!-- Preview Box -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl min-h-[450px] flex flex-col">
                 <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
-                    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                    <h2 id="t-previewtitle" class="text-lg font-semibold text-white flex items-center gap-2">
                         <i class="fa-solid fa-images text-amber-500"></i> Anteprima (Clicca per cambiare Artwork)
                     </h2>
                     <div id="cardCountBadge" class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-medium">
@@ -222,7 +210,7 @@
 
                 <div id="statusMessage" class="my-auto text-center py-12 text-slate-500">
                     <i class="fa-solid fa-layer-group text-4xl mb-3 opacity-30"></i>
-                    <p class="text-sm">Compila i campi a sinistra e clicca su "Raccogli Carte" per iniziare.</p>
+                    <p id="t-statusinit" class="text-sm">Compila i campi a sinistra e clicca su "Raccogli Carte" per iniziare.</p>
                 </div>
 
                 <div id="previewContainer" class="space-y-6 overflow-y-auto max-h-[600px] pr-1"></div>
@@ -234,7 +222,7 @@
     <!-- SPAZIO PUBBLICITARIO 2 (Footer) -->
     <div class="max-w-7xl mx-auto px-4 w-full mb-8">
         <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 text-center text-xs text-slate-500">
-            <span class="block text-[10px] uppercase tracking-wider mb-2 text-slate-600">Spazio Sponsorizzato</span>
+            <span id="t-sponsor2" class="block text-[10px] uppercase tracking-wider mb-2 text-slate-600">Spazio Sponsorizzato</span>
             <div class="min-h-[90px] flex items-center justify-center border border-dashed border-slate-800 rounded-xl overflow-hidden p-2">
                 <span class="text-[11px] text-slate-600">Banner Orizzontale AdSense</span>
             </div>
@@ -250,31 +238,183 @@
                 </h3>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <p class="text-xs text-slate-400">Scegli quale versione o stampa desideri utilizzare per questa carta:</p>
+            <p id="t-modaldesc" class="text-xs text-slate-400">Scegli quale versione o stampa desideri utilizzare per questa carta:</p>
             <div id="modalArtworksGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-3 overflow-y-auto p-1 max-h-[60vh]"></div>
         </div>
     </div>
 
     <!-- Footer -->
     <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500 bg-slate-900/40">
-        <p>YugiProxy &bull; Sviluppato per la community di duellanti e formati retrò.</p>
+        <p id="t-footertext">YugiProxy &bull; Sviluppato per la community di duellanti e formati retrò.</p>
     </footer>
-
-    <!-- Google Translate Script -->
-    <script type="text/javascript">
-        function googleTranslateElementInit() {
-            new google.translate.TranslateElement({
-                pageLanguage: 'it',
-                includedLanguages: 'it,en,fr,de,es',
-                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-                autoDisplay: false
-            }, 'google_translate_element');
-        }
-    </script>
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
     <!-- JavaScript Logic -->
     <script>
+        const TRANSLATIONS = {
+            it: {
+                pagetitle: "YugiProxy - Generatore di Proxy per Yu-Gi-Oh!",
+                subtitle: "Con selettore formati storici e controllo restrizioni",
+                share: "Condividi",
+                insertdeck: "Inserisci Decklist",
+                clearall: "Pulisci tutto",
+                formatlabel: "Formato / Banlist di Controllo",
+                optretro: "Formati Retrò & Storici",
+                optmodern: "Formati Moderni & Standard",
+                cardlanglabel: "Lingua di Ricerca Testo Carte",
+                collectbtn: "Raccogli Carte & Anteprima",
+                sponsor1: "Spazio Sponsorizzato",
+                sponsor2: "Spazio Sponsorizzato",
+                exporttitle: "Esportazione",
+                includebacks: "Includi pagine con il retro delle carte (per stampa fronte-retro)",
+                downloadpdf: "Scarica PDF",
+                stattotal: "Totali",
+                statmonsters: "Mostri",
+                statspells: "Magie",
+                stattraps: "Trappole",
+                banlistok: "Nessuna violazione rilevata per la banlist selezionata.",
+                previewtitle: "Anteprima (Clicca per cambiare Artwork)",
+                statusinit: "Compila i campi a sinistra e clicca su \"Raccogli Carte\" per iniziare.",
+                modaldesc: "Scegli quale versione o stampa desideri utilizzare per questa carta:",
+                footertext: "YugiProxy &bull; Sviluppato per la community di duellanti e formati retrò."
+            },
+            en: {
+                pagetitle: "YugiProxy - Yu-Gi-Oh! Proxy Generator",
+                subtitle: "With historical formats selector and banlist control",
+                share: "Share",
+                insertdeck: "Enter Decklist",
+                clearall: "Clear All",
+                formatlabel: "Format / Banlist Control",
+                optretro: "Retro & Historical Formats",
+                optmodern: "Modern & Standard Formats",
+                cardlanglabel: "Card Text Search Language",
+                collectbtn: "Collect Cards & Preview",
+                sponsor1: "Sponsored Space",
+                sponsor2: "Sponsored Space",
+                exporttitle: "Export",
+                includebacks: "Include card back pages (for double-sided printing)",
+                downloadpdf: "Download PDF",
+                stattotal: "Total",
+                statmonsters: "Monsters",
+                statspells: "Spells",
+                stattraps: "Traps",
+                banlistok: "No violations found for the selected banlist.",
+                previewtitle: "Preview (Click to change Artwork)",
+                statusinit: "Fill in the fields on the left and click \"Collect Cards\" to start.",
+                modaldesc: "Choose which version or printing you want to use for this card:",
+                footertext: "YugiProxy &bull; Developed for the duelist community and retro formats."
+            },
+            fr: {
+                pagetitle: "YugiProxy - Générateur de Proxy Yu-Gi-Oh!",
+                subtitle: "Avec sélecteur de formats historiques et contrôle de banlist",
+                share: "Partager",
+                insertdeck: "Entrer la Decklist",
+                clearall: "Tout effacer",
+                formatlabel: "Format / Contrôle de Banlist",
+                optretro: "Formats Rétro & Historiques",
+                optmodern: "Formats Modernes & Standard",
+                cardlanglabel: "Langue de recherche du texte des cartes",
+                collectbtn: "Récupérer les cartes & Aperçu",
+                sponsor1: "Espace Sponsorisé",
+                sponsor2: "Espace Sponsorisé",
+                exporttitle: "Exportation",
+                includebacks: "Inclure les dos de cartes (pour impression recto-verso)",
+                downloadpdf: "Télécharger PDF",
+                stattotal: "Total",
+                statmonsters: "Monstres",
+                statspells: "Magies",
+                stattraps: "Pièges",
+                banlistok: "Aucune violation détectée pour la banlist sélectionnée.",
+                previewtitle: "Aperçu (Cliquez pour changer l'Artwork)",
+                statusinit: "Remplissez les champs à gauche et cliquez sur \"Récupérer les cartes\" pour commencer.",
+                modaldesc: "Choisissez quelle version ou impression vous souhaitez utiliser pour cette carte :",
+                footertext: "YugiProxy &bull; Développé pour la communauté des duellistes et formats rétro."
+            },
+            de: {
+                pagetitle: "YugiProxy - Yu-Gi-Oh! Proxy-Generator",
+                subtitle: "Mit historischen Format-Auswahl und Banlisten-Kontrolle",
+                share: "Teilen",
+                insertdeck: "Deckliste eingeben",
+                clearall: "Alles löschen",
+                formatlabel: "Format / Banlisten-Kontrolle",
+                optretro: "Retro- & historische Formate",
+                optmodern: "Moderne & Standardformate",
+                cardlanglabel: "Kartentext-Suchsprache",
+                collectbtn: "Karten sammeln & Vorschau",
+                sponsor1: "Gesponserter Bereich",
+                sponsor2: "Gesponserter Bereich",
+                exporttitle: "Export",
+                includebacks: "Kartenrückseiten einschließen (für beidseitigen Druck)",
+                downloadpdf: "PDF herunterladen",
+                stattotal: "Gesamt",
+                statmonsters: "Monster",
+                statspells: "Zauber",
+                stattraps: "Fallen",
+                banlistok: "Keine Verstöße für die ausgewählte Banliste gefunden.",
+                previewtitle: "Vorschau (Klicken, um Artwork zu ändern)",
+                statusinit: "Füllen Sie die Felder links aus und klicken Sie auf \"Karten sammeln\", um zu beginnen.",
+                modaldesc: "Wählen Sie aus, welche Version oder Druckvariante Sie für diese Karte verwenden möchten:",
+                footertext: "YugiProxy &bull; Entwickelt für die Duellanten-Community und Retro-Formate."
+            },
+            es: {
+                pagetitle: "YugiProxy - Generador de Proxy para Yu-Gi-Oh!",
+                subtitle: "Con selector de formatos históricos y control de restricciones",
+                share: "Compartir",
+                insertdeck: "Ingresar Decklist",
+                clearall: "Borrar todo",
+                formatlabel: "Formato / Banlist de Control",
+                optretro: "Formatos Retro e Históricos",
+                optmodern: "Formatos Modernos y Estándar",
+                cardlanglabel: "Idioma de búsqueda de texto de cartas",
+                collectbtn: "Recoger Cartas y Vista Previa",
+                sponsor1: "Espacio Patrocinado",
+                sponsor2: "Espacio Patrocinado",
+                exporttitle: "Exportación",
+                includebacks: "Incluir reverso de las cartas (para impresión a doble cara)",
+                downloadpdf: "Descargar PDF",
+                stattotal: "Totales",
+                statmonsters: "Monstruos",
+                statspells: "Magias",
+                stattraps: "Trampas",
+                banlistok: "No se encontraron violaciones para la banlist seleccionada.",
+                previewtitle: "Vista Previa (Haz clic para cambiar Artwork)",
+                statusinit: "Rellena los campos de la izquierda y haz clic en \"Recoger Cartas\" para empezar.",
+                modaldesc: "Elige qué versión o impresión deseas utilizar para esta carta:",
+                footertext: "YugiProxy &bull; Desarrollado para la comunidad de duelistas y formatos retro."
+            }
+        };
+
+        function changeUILanguage(lang) {
+            const t = TRANSLATIONS[lang] || TRANSLATIONS.it;
+            document.getElementById('t-pagetitle').innerText = t.pagetitle;
+            document.getElementById('t-subtitle').innerText = t.subtitle;
+            document.getElementById('t-share').innerText = t.share;
+            document.getElementById('t-insertdeck').innerText = t.insertdeck;
+            document.getElementById('t-clearall').innerText = t.clearall;
+            document.getElementById('t-formatlabel').innerHTML = `<i class="fa-solid fa-scale-balanced"></i> ${t.formatlabel}`;
+            document.getElementById('t-opt-retro').label = t.optretro;
+            document.getElementById('t-opt-modern').label = t.optmodern;
+            document.getElementById('t-cardlanglabel').innerText = t.cardlanglabel;
+            document.getElementById('t-collectbtn').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> ${t.collectbtn}`;
+            document.getElementById('t-sponsor1').innerText = t.sponsor1;
+            document.getElementById('t-sponsor2').innerText = t.sponsor2;
+            document.getElementById('t-exporttitle').innerText = t.exporttitle;
+            document.getElementById('t-includebacks').innerText = t.includebacks;
+            document.getElementById('t-downloadpdf').innerHTML = `<i class="fa-solid fa-file-pdf"></i> ${t.downloadpdf}`;
+            document.getElementById('t-stat-total').innerText = t.stattotal;
+            document.getElementById('t-stat-monsters').innerText = t.statmonsters;
+            document.getElementById('t-stat-spells').innerText = t.statspells;
+            document.getElementById('t-stat-traps').innerText = t.stattraps;
+            document.getElementById('t-banlist-ok').innerText = t.banlistok;
+            document.getElementById('t-previewtitle').innerHTML = `<i class="fa-solid fa-images text-amber-500"></i> ${t.previewtitle}`;
+            document.getElementById('t-statusinit').innerText = t.statusinit;
+            document.getElementById('t-modaldesc').innerText = t.modaldesc;
+            document.getElementById('t-footertext').innerHTML = t.footertext;
+            
+            // Sincronizza anche la lingua di ricerca carte di default se l'utente vuole
+            document.getElementById('langSelect').value = lang;
+            localStorage.setItem('yugiproxy_uilang', lang);
+        }
+
         let deckSections = { main: [], extra: [], side: [] };
         let ydkCardIds = { main: [], extra: [], side: [] };
         let currentEditingCardRef = null;
@@ -349,6 +489,12 @@
         };
 
         window.addEventListener('DOMContentLoaded', () => {
+            const savedLang = localStorage.getItem('yugiproxy_uilang');
+            if (savedLang) {
+                document.getElementById('uiLangSelect').value = savedLang;
+                changeUILanguage(savedLang);
+            }
+
             const urlParams = new URLSearchParams(window.location.search);
             const sharedIds = urlParams.get('ids');
             if (sharedIds) {
