@@ -125,7 +125,6 @@
             <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 text-center text-xs text-slate-500">
                 <span class="block text-[10px] uppercase tracking-wider mb-2 text-slate-600">Spazio Sponsorizzato</span>
                 <div class="min-h-[100px] flex items-center justify-center border border-dashed border-slate-800 rounded-xl overflow-hidden p-2">
-                    <!-- Inserisci qui il tag <ins class="adsbygoogle">...</ins> fornito da AdSense -->
                     <span class="text-[11px] text-slate-600">Banner Sidebar AdSense</span>
                 </div>
             </div>
@@ -211,12 +210,11 @@
 
     </main>
 
-    <!-- SPAZIO PUBBLICITARIO 2 (Footer / Sotto il contenuto principale) -->
+    <!-- SPAZIO PUBBLICITARIO 2 (Footer) -->
     <div class="max-w-7xl mx-auto px-4 w-full mb-8">
         <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 text-center text-xs text-slate-500">
             <span class="block text-[10px] uppercase tracking-wider mb-2 text-slate-600">Spazio Sponsorizzato</span>
             <div class="min-h-[90px] flex items-center justify-center border border-dashed border-slate-800 rounded-xl overflow-hidden p-2">
-                <!-- Inserisci qui il tag <ins class="adsbygoogle">...</ins> fornito da AdSense -->
                 <span class="text-[11px] text-slate-600">Banner Orizzontale AdSense</span>
             </div>
         </div>
@@ -318,13 +316,13 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
-            const sharedDeck = urlParams.get('deck');
-            if (sharedDeck) {
+            const sharedIds = urlParams.get('ids');
+            if (sharedIds) {
                 try {
-                    const decoded = JSON.parse(decodeURIComponent(atob(sharedDeck)));
-                    if (decoded.main) document.getElementById('mainInput').value = decoded.main;
-                    if (decoded.extra) document.getElementById('extraInput').value = decoded.extra;
-                    if (decoded.side) document.getElementById('sideInput').value = decoded.side;
+                    const decoded = JSON.parse(decodeURIComponent(atob(sharedIds)));
+                    if (decoded.m) document.getElementById('mainInput').value = decoded.m;
+                    if (decoded.e) document.getElementById('extraInput').value = decoded.e;
+                    if (decoded.s) document.getElementById('sideInput').value = decoded.s;
                     processDeck();
                     return;
                 } catch (e) {
@@ -709,22 +707,47 @@
             URL.revokeObjectURL(url);
         }
 
-        function shareDeck() {
-            const main = document.getElementById('mainInput').value.trim();
-            const extra = document.getElementById('extraInput').value.trim();
-            const side = document.getElementById('sideInput').value.trim();
+        function compressIdList(idArray) {
+            let counts = {};
+            idArray.forEach(id => counts[id] = (counts[id] || 0) + 1);
+            let result = [];
+            for (let [id, qty] of Object.entries(counts)) {
+                result.push(qty > 1 ? `${id}x${qty}` : `${id}`);
+            }
+            return result.join(',');
+        }
 
-            if (!main && !extra && !side) {
-                alert('Inserisci prima almeno una sezione da condividere!');
+        function decompressIdString(str) {
+            if (!str) return '';
+            let lines = [];
+            let parts = str.split(',');
+            parts.forEach(part => {
+                if (part.includes('x')) {
+                    let [id, qty] = part.split('x');
+                    for (let i = 0; i < parseInt(qty); i++) lines.push(id);
+                } else if (part.trim()) {
+                    lines.push(part.trim());
+                }
+            });
+            return lines.join('\n');
+        }
+
+        function shareDeck() {
+            const m = compressIdList(ydkCardIds.main);
+            const e = compressIdList(ydkCardIds.extra);
+            const s = compressIdList(ydkCardIds.side);
+
+            if (!m && !e && !s) {
+                alert('Prima raccogli le carte cliccando su "Raccogli Carte"!');
                 return;
             }
 
-            const deckData = JSON.stringify({ main, extra, side });
-            const encoded = btoa(encodeURIComponent(deckData));
-            const shareUrl = `${window.location.origin}${window.location.pathname}?deck=${encoded}`;
+            const compactData = JSON.stringify({ m, e, s });
+            const encoded = btoa(encodeURIComponent(compactData));
+            const shareUrl = `${window.location.origin}${window.location.pathname}?ids=${encoded}`;
             
             navigator.clipboard.writeText(shareUrl).then(() => {
-                alert('Link copiato negli appunti!');
+                alert('Link corto copiato negli appunti!');
             }).catch(() => {
                 prompt('Copia questo link:', shareUrl);
             });
