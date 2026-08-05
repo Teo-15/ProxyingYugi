@@ -26,7 +26,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold tracking-tight text-white">YugiProxy <span class="text-amber-500 text-xs px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 align-middle">Multi-Banlist Ready</span></h1>
-                    <p class="text-xs text-slate-400">Con selettore formati e controllo restrizioni</p>
+                    <p class="text-xs text-slate-400">Con selettore formati storici e controllo restrizioni</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2">
@@ -60,10 +60,18 @@
                         <i class="fa-solid fa-scale-balanced"></i> Formato / Banlist di Controllo
                     </label>
                     <select id="formatSelect" onchange="processDeck()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-amber-300 font-medium focus:outline-none focus:border-amber-500 transition-colors cursor-pointer">
-                        <option value="edison" selected>Edison Format (Marzo 2010)</option>
-                        <option value="goat">GOAT Format (Aprile 2005)</option>
-                        <option value="tcg">TCG (Avanzato Attuale)</option>
-                        <option value="none">Nessun controllo banlist</option>
+                        <optgroup label="Formati Retrò & Storici">
+                            <option value="edison" selected>Edison Format (Marzo 2010)</option>
+                            <option value="goat">GOAT Format (Aprile 2005)</option>
+                            <option value="hat">HAT Format (Luglio 2014)</option>
+                            <option value="tengu">Tengu Plant (Settembre 2011)</option>
+                            <option value="roc">Reaper Format / ROC (Settembre 2006)</option>
+                        </optgroup>
+                        <optgroup label="Formati Moderni & Standard">
+                            <option value="tcg">TCG (Avanzato Attuale)</option>
+                            <option value="advanced_2020">Advanced 2020 (Master Rule 2020)</option>
+                            <option value="none">Nessun controllo banlist</option>
+                        </optgroup>
                     </select>
                 </div>
 
@@ -215,7 +223,7 @@
         let ydkCardIds = { main: [], extra: [], side: [] };
         let currentEditingCardRef = null;
 
-        // Mappa banlist con nomi inglesi ufficiali
+        // Mappa estesa di banlist storiche e competitive (Edison, GOAT, HAT, Tengu, ROC, Advanced 2020)
         const RETRO_BANLISTS = {
             edison: {
                 "pot of greed": 0, "graceful charity": 0, "confiscation": 0, "delinquent duo": 0,
@@ -236,11 +244,41 @@
                 "mystical space typhoon": 2, "monster reborn": 1, "premature burial": 1,
                 "ring of destruction": 1, "mirror force": 1, "torrential tribute": 1, "solemn judgment": 3,
                 "tribe-infecting virus": 1, "black luster soldier - envoy of the beginning": 0,
-                "chaos empress dragon - envoy of the end": 0, "yata-garasu": 0
+                "chaos empress dragon - envoy of the end": 0, "yata-garasu": 0, "harpie's feather duster": 0
+            },
+            hat: {
+                "heavy storm": 0, "monster reborn": 0, "dark hole": 1, "solemn judgment": 0,
+                "solemn warning": 1, "bottomless trap hole": 1, "torrential tribute": 1,
+                "compulsory evacuation device": 1, "traptrix myrmeleo": 3, "traptrix dionaea": 3,
+                "fire king high avatar garunix": 3, "brotherhood of the fire fist - bear": 1,
+                "number 101: silent honor ark": 1, "evilswarm exciton knight": 1, "lavalval chain": 1,
+                "pot of duality": 3, "upstart goblin": 3, "mystical space typhoon": 3,
+                "harpie's feather duster": 0, "snatch steal": 0
+            },
+            tengu: {
+                "reborn tengu": 3, "spore": 1, "glow-up bulb": 1, "debris dragon": 2,
+                "lonefire blossom": 1, "glow-up bulb": 1, "mind control": 1, "heavy storm": 1,
+                "dark hole": 1, "monster reborn": 1, "mystical space typhoon": 2,
+                "solemn judgment": 1, "solemn warning": 2, "torrential tribute": 1,
+                "traptrix dionaea": 0, "brionac, dragon of the ice barrier": 1,
+                "harpie's feather duster": 0
+            },
+            roc: {
+                "pot of greed": 1, "graceful charity": 1, "delinquent duo": 1, "confiscation": 1,
+                "the forceful sentry": 1, "painful choice": 1, "snatch steal": 1, "heavy storm": 1,
+                "mystical space typhoon": 1, "monster reborn": 1, "premature burial": 1,
+                "ring of destruction": 1, "mirror force": 1, "torrential tribute": 1,
+                "black luster soldier - envoy of the beginning": 1, "chaos emperor dragon - envoy of the end": 1,
+                "yata-garasu": 1, "tribe-infecting virus": 1, "harpie's feather duster": 0
+            },
+            advanced_2020: {
+                "harpie's feather duster": 1, "monster reborn": 1, "dark hole": 1,
+                "pot of greed": 0, "graceful charity": 0, "heavy storm": 0,
+                "mystical space typhoon": 3, "traptrix myrmeleo": 3
             }
         };
 
-        // Mappa di traduzione/alias comuni (italiano / nomi comuni -> chiave inglese ufficiale)
+        // Mappa di traduzione/alias comuni (italiano -> chiave inglese ufficiale)
         const CARD_ALIASES = {
             "spolverino dell'arpia": "harpie's feather duster",
             "spolverino dell' arpia": "harpie's feather duster",
@@ -252,7 +290,8 @@
             "forza speculare": "mirror force",
             "tempesta potente": "heavy storm",
             "denise la furbacchiona": "delinquent duo",
-            "due di denari": "delinquent duo"
+            "due di denari": "delinquent duo",
+            "buco nero": "dark hole"
         };
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -356,13 +395,13 @@
                         rarity = cardObj.card_sets[0].set_rarity;
                     }
 
-                    let limits = { edison: 3, tcg: 3, goat: 3 };
+                    let limits = { edison: 3, tcg: 3, goat: 3, hat: 3, tengu: 3, roc: 3, advanced_2020: 3 };
                     
                     const engName = (cardObj.name || "").toLowerCase();
                     const searchedName = itemName.toLowerCase();
                     const translatedKey = CARD_ALIASES[searchedName] || CARD_ALIASES[engName] || engName;
 
-                    ['edison', 'goat'].forEach(fmt => {
+                    ['edison', 'goat', 'hat', 'tengu', 'roc', 'advanced_2020'].forEach(fmt => {
                         const banMap = RETRO_BANLISTS[fmt];
                         if (banMap[translatedKey] !== undefined) {
                             limits[fmt] = banMap[translatedKey];
@@ -532,14 +571,18 @@
             const formatNames = {
                 edison: "Edison Format (Marzo 2010)",
                 goat: "GOAT Format (Aprile 2005)",
-                tcg: "TCG Avanzato"
+                hat: "HAT Format (Luglio 2014)",
+                tengu: "Tengu Plant (Settembre 2011)",
+                roc: "Reaper Format / ROC (Settembre 2006)",
+                tcg: "TCG Avanzato Attuale",
+                advanced_2020: "Advanced 2020"
             };
 
             warningTitle.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Avvisi Banlist (${formatNames[format]}):`;
             let violations = [];
 
             for (let [cardName, count] of Object.entries(occurrences)) {
-                const limits = limitsMap[cardName] || { edison: 3, tcg: 3, goat: 3 };
+                const limits = limitsMap[cardName] || { edison: 3, tcg: 3, goat: 3, hat: 3, tengu: 3, roc: 3, advanced_2020: 3 };
                 const limit = limits[format] !== undefined ? limits[format] : 3;
 
                 if (count > limit) {
