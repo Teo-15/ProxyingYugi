@@ -84,7 +84,7 @@
                     <label class="block text-xs font-medium text-amber-400 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
                         <i class="fa-solid fa-layer-group"></i> Main Deck
                     </label>
-                    <textarea id="mainInput" rows="6" placeholder="3 Tifone Spaziale Mistico&#10;2 Cyber Drago&#10;1 Giudizio Solenne" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500 transition-colors resize-y"></textarea>
+                    <textarea id="mainInput" rows="6" placeholder="3 Spolverino dell'arpia&#10;2 Cyber Drago&#10;1 Giudizio Solenne" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500 transition-colors resize-y"></textarea>
                 </div>
 
                 <!-- Extra Deck Textarea -->
@@ -215,7 +215,7 @@
         let ydkCardIds = { main: [], extra: [], side: [] };
         let currentEditingCardRef = null;
 
-        // Mappa robusta Edison Format (Marzo 2010) e GOAT Format (Aprile 2005) indicizzata con nomi inglesi standard
+        // Mappa banlist con nomi inglesi ufficiali
         const RETRO_BANLISTS = {
             edison: {
                 "pot of greed": 0, "graceful charity": 0, "confiscation": 0, "delinquent duo": 0,
@@ -238,6 +238,21 @@
                 "tribe-infecting virus": 1, "black luster soldier - envoy of the beginning": 0,
                 "chaos empress dragon - envoy of the end": 0, "yata-garasu": 0
             }
+        };
+
+        // Mappa di traduzione/alias comuni (italiano / nomi comuni -> chiave inglese ufficiale)
+        const CARD_ALIASES = {
+            "spolverino dell'arpia": "harpie's feather duster",
+            "spolverino dell' arpia": "harpie's feather duster",
+            "tifone spaziale mistico": "mystical space typhoon",
+            "giudizio solenne": "solemn judgment",
+            "mostro resurrezione": "monster reborn",
+            "bomba dimensionale": "dimensional prison",
+            "tributo torrenziale": "torrential tribute",
+            "forza speculare": "mirror force",
+            "tempesta potente": "heavy storm",
+            "denise la furbacchiona": "delinquent duo",
+            "due di denari": "delinquent duo"
         };
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -343,13 +358,15 @@
 
                     let limits = { edison: 3, tcg: 3, goat: 3 };
                     
-                    // Controlliamo sia il nome inglese ufficiale (cardObj.name) sia eventuali corrispondenze parziali
                     const engName = (cardObj.name || "").toLowerCase();
                     const searchedName = itemName.toLowerCase();
+                    const translatedKey = CARD_ALIASES[searchedName] || CARD_ALIASES[engName] || engName;
 
                     ['edison', 'goat'].forEach(fmt => {
                         const banMap = RETRO_BANLISTS[fmt];
-                        if (banMap[engName] !== undefined) {
+                        if (banMap[translatedKey] !== undefined) {
+                            limits[fmt] = banMap[translatedKey];
+                        } else if (banMap[engName] !== undefined) {
                             limits[fmt] = banMap[engName];
                         } else if (banMap[searchedName] !== undefined) {
                             limits[fmt] = banMap[searchedName];
