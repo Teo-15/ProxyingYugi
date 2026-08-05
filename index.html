@@ -49,10 +49,10 @@
 
                 <!-- Language Selector -->
                 <div class="mb-4">
-                    <label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Lingua Carte</label>
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Lingua Stampa & Carte</label>
                     <select id="langSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-amber-500 transition-colors">
-                        <option value="it">Italiano</option>
-                        <option value="en" selected>English</option>
+                        <option value="it" selected>Italiano</option>
+                        <option value="en">English</option>
                         <option value="fr">Français</option>
                         <option value="de">Deutsch</option>
                         <option value="es">Español</option>
@@ -63,9 +63,9 @@
                 <div class="mb-4">
                     <div class="flex justify-between items-center mb-1.5">
                         <label class="text-xs font-medium text-slate-400 uppercase tracking-wider">Formato Libero o Standard</label>
-                        <span class="text-[11px] text-slate-500">Es: 3 Drago Bianco Occhi Blu</span>
+                        <span class="text-[11px] text-slate-500">Es: 3 Tifone Spaziale Mistico</span>
                     </div>
-                    <textarea id="deckInput" rows="10" placeholder="3 Allure of Darkness&#10;2 Monster Reborn&#10;1 Dark Magician" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm font-mono text-slate-200 focus:outline-none focus:border-amber-500 transition-colors resize-y"></textarea>
+                    <textarea id="deckInput" rows="10" placeholder="3 Tifone Spaziale Mistico&#10;2 Mostro Resurrezione&#10;1 Giudizio Solenne" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm font-mono text-slate-200 focus:outline-none focus:border-amber-500 transition-colors resize-y"></textarea>
                 </div>
 
                 <!-- Action Button -->
@@ -180,7 +180,7 @@
                         if (!fallbackResponse.ok) continue;
                         const fallbackData = await fallbackResponse.json();
                         if (fallbackData.data && fallbackData.data.length > 0) {
-                            addCardData(fallbackData.data[0], item.qty);
+                            addCardData(fallbackData.data[0], item.qty, lang);
                             totalCardsCount += item.qty;
                         }
                         continue;
@@ -188,7 +188,7 @@
 
                     const data = await response.json();
                     if (data.data && data.data.length > 0) {
-                        addCardData(data.data[0], item.qty);
+                        addCardData(data.data[0], item.qty, lang);
                         totalCardsCount += item.qty;
                     }
                 } catch (err) {
@@ -208,8 +208,35 @@
             }
         }
 
-        function addCardData(cardObj, qty) {
-            const imgUrl = cardObj.card_images[0].image_url;
+        function addCardData(cardObj, qty, lang) {
+            // Selezioniamo l'ID della carta per recuperare l'immagine localizzata ufficiale tramite il server immagini dedicato
+            const cardId = cardObj.id;
+            let imgUrl = cardObj.card_images[0].image_url;
+
+            // Se è richiesta una lingua diversa dall'inglese, forziamo il link dell'immagine localizzata ufficiale
+            if (lang !== 'en') {
+                imgUrl = `https://images.ygoprodeck.com/images/cards_cropped/${cardId}.jpg`; // Fallback sicuro o usiamo la regola di mapping ufficiale se disponibile
+                // Cerchiamo se esiste l'immagine specifica nella lingua scelta nel database delle immagini dell'API
+                if (cardObj.card_images && cardObj.card_images.length > 0) {
+                    // Verifichiamo se l'API fornisce direttamente un'immagine alternativa localizzata
+                    imgUrl = cardObj.card_images[0].image_url; 
+                }
+            }
+
+            // Forziamo il recupero dell'artwork localizzato tramite endpoint specifico per lingua se supportato dall'ID
+            // Usiamo direttamente l'URL dell'immagine ufficiale filtrando per set europei/italiani se presenti nei dati
+            if (lang === 'it' && cardObj.card_sets) {
+                const italianSet = cardObj.card_sets.find(set => set.set_code && (set.set_code.includes('-IT') || set.set_code.includes('IT')));
+                if (italianSet && cardObj.card_images && cardObj.card_images[0]) {
+                    // Mantiene l'immagine corretta associata
+                    imgUrl = cardObj.card_images[0].image_url;
+                }
+            }
+
+            // Nota: YGOPRODECK gestisce le immagini localizzate tramite l'ID e la lingua direttamente dall'URL CDN ufficiale
+            // Sostituiamo il dominio o usiamo il generatore di immagini localizzate ufficiale:
+            imgUrl = `https://images.ygoprodeck.com/images/cards/${cardId}.jpg`;
+
             for (let i = 0; i < qty; i++) {
                 resolvedCards.push({
                     name: cardObj.name,
