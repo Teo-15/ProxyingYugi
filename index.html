@@ -17,6 +17,24 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
+        /* Nasconde il banner nativo di Google Translate */
+        .goog-te-banner-frame.skiptranslate { display: none !important; }
+        body { top: 0px !important; }
+        #goog-gt-tt { display: none !important; }
+        .goog-tooltip { display: none !important; }
+        .goog-tooltip:hover { display: none !important; }
+        .goog-text-highlight { background-color: transparent !important; box-shadow: none !important; }
+        /* Stile personalizzato per il widget Google Translate */
+        .goog-te-combo {
+            background-color: #020617 !important;
+            color: #cbd5e1 !important;
+            border: 1px solid #1e293b !important;
+            padding: 6px 10px !important;
+            border-radius: 0.75rem !important;
+            font-size: 0.75rem !important;
+            outline: none !important;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-slate-950">
@@ -33,7 +51,10 @@
                     <p class="text-xs text-slate-400">Con selettore formati storici e controllo restrizioni</p>
                 </div>
             </div>
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center space-x-3">
+                <!-- Selettore Lingua Interfaccia (Google Translate Widget) -->
+                <div id="google_translate_element" class="hidden sm:block"></div>
+
                 <button onclick="shareDeck()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer">
                     <i class="fa-solid fa-share-nodes text-amber-500"></i> Condividi
                 </button>
@@ -81,7 +102,7 @@
 
                 <!-- Language Selector -->
                 <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Lingua di Ricerca Testo</label>
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Lingua di Ricerca Testo Carte</label>
                     <select id="langSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-amber-500 transition-colors cursor-pointer">
                         <option value="it" selected>Italiano</option>
                         <option value="en">English</option>
@@ -238,6 +259,19 @@
     <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500 bg-slate-900/40">
         <p>YugiProxy &bull; Sviluppato per la community di duellanti e formati retrò.</p>
     </footer>
+
+    <!-- Google Translate Script -->
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'it',
+                includedLanguages: 'it,en,fr,de,es',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: false
+            }, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
     <!-- JavaScript Logic -->
     <script>
@@ -715,21 +749,6 @@
                 result.push(qty > 1 ? `${id}x${qty}` : `${id}`);
             }
             return result.join(',');
-        }
-
-        function decompressIdString(str) {
-            if (!str) return '';
-            let lines = [];
-            let parts = str.split(',');
-            parts.forEach(part => {
-                if (part.includes('x')) {
-                    let [id, qty] = part.split('x');
-                    for (let i = 0; i < parseInt(qty); i++) lines.push(id);
-                } else if (part.trim()) {
-                    lines.push(part.trim());
-                }
-            });
-            return lines.join('\n');
         }
 
         function shareDeck() {
