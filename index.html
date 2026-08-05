@@ -26,11 +26,13 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold tracking-tight text-white">YugiProxy <span class="text-amber-500 text-xs px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 align-middle">Edison / Retro Ready</span></h1>
-                    <p class="text-xs text-slate-400">Generatore di proxy istantaneo multilingua</p>
+                    <p class="text-xs text-slate-400">Generatore di proxy avanzato</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2">
-                <span class="text-xs text-slate-400 hidden sm:inline">Supporta YGOPRODECK API</span>
+                <button onclick="shareDeck()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-share-nodes text-amber-500"></i> Condividi
+                </button>
             </div>
         </div>
     </header>
@@ -47,25 +49,13 @@
                     <i class="fa-solid fa-list-check text-amber-500"></i> Incolla la tua Decklist
                 </h2>
 
-                <!-- Language Selector -->
-                <div class="mb-4">
-                    <label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Lingua Stampa & Carte</label>
-                    <select id="langSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-amber-500 transition-colors">
-                        <option value="it" selected>Italiano</option>
-                        <option value="en">English</option>
-                        <option value="fr">Français</option>
-                        <option value="de">Deutsch</option>
-                        <option value="es">Español</option>
-                    </select>
-                </div>
-
                 <!-- Textarea -->
                 <div class="mb-4">
                     <div class="flex justify-between items-center mb-1.5">
-                        <label class="text-xs font-medium text-slate-400 uppercase tracking-wider">Formato Libero o Standard</label>
-                        <span class="text-[11px] text-slate-500">Es: 3 Tifone Spaziale Mistico</span>
+                        <label class="text-xs font-medium text-slate-400 uppercase tracking-wider">Main, Extra & Side</label>
+                        <span class="text-[11px] text-slate-500">Usa le sezioni standard</span>
                     </div>
-                    <textarea id="deckInput" rows="10" placeholder="3 Tifone Spaziale Mistico&#10;2 Cyber Drago&#10;1 Giudizio Solenne" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm font-mono text-slate-200 focus:outline-none focus:border-amber-500 transition-colors resize-y"></textarea>
+                    <textarea id="deckInput" rows="12" placeholder="# Main Deck&#10;3 Tifone Spaziale Mistico&#10;2 Cyber Drago&#10;1 Giudizio Solenne&#10;&#10;# Extra Deck&#10;1 Drago End Suvversivo&#10;&#10;# Side Deck&#10;2 Decreto Reale" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm font-mono text-slate-200 focus:outline-none focus:border-amber-500 transition-colors resize-y"></textarea>
                 </div>
 
                 <!-- Action Button -->
@@ -75,11 +65,19 @@
             </div>
 
             <!-- Export Panel -->
-            <div id="exportPanel" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl hidden">
-                <h3 class="text-md font-semibold text-white mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-file-pdf text-amber-500"></i> Genera PDF per la Stampa
+            <div id="exportPanel" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl hidden space-y-4">
+                <h3 class="text-md font-semibold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-file-pdf text-amber-500"></i> Opzioni Stampa PDF
                 </h3>
-                <p class="text-xs text-slate-400 mb-4">Il PDF verrà impaginato in griglia 3x3 su fogli A4 con il righello di calibrazione millimetrica integrato.</p>
+                
+                <!-- Checkbox per i retro -->
+                <div class="flex items-center gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                    <input type="checkbox" id="includeBacks" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
+                    <label for="includeBacks" class="text-xs text-slate-300 cursor-pointer select-none">
+                        Includi pagine con il **retro delle carte** (per stampa fronte-retro)
+                    </label>
+                </div>
+
                 <button onclick="generatePDF()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 text-sm cursor-pointer">
                     <i class="fa-solid fa-download"></i> Scarica PDF (A4)
                 </button>
@@ -88,7 +86,29 @@
 
         <!-- Right Panel: Preview & Stats -->
         <div class="lg:col-span-7 space-y-6">
-            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl min-h-[500px] flex flex-col">
+            
+            <!-- Stats Box -->
+            <div id="statsBox" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl hidden grid grid-cols-4 gap-2 text-center">
+                <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+                    <span class="block text-[10px] text-slate-400 uppercase tracking-wider">Totali</span>
+                    <span id="statTotal" class="text-lg font-bold text-white">0</span>
+                </div>
+                <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+                    <span class="block text-[10px] text-blue-400 uppercase tracking-wider">Mostri</span>
+                    <span id="statMonsters" class="text-lg font-bold text-blue-400">0</span>
+                </div>
+                <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+                    <span class="block text-[10px] text-emerald-400 uppercase tracking-wider">Magie</span>
+                    <span id="statSpells" class="text-lg font-bold text-emerald-400">0</span>
+                </div>
+                <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+                    <span class="block text-[10px] text-pink-400 uppercase tracking-wider">Trappole</span>
+                    <span id="statTraps" class="text-lg font-bold text-pink-400">0</span>
+                </div>
+            </div>
+
+            <!-- Preview Box -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl min-h-[450px] flex flex-col">
                 <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
                     <h2 class="text-lg font-semibold text-white flex items-center gap-2">
                         <i class="fa-solid fa-images text-amber-500"></i> Anteprima Carte
@@ -120,18 +140,41 @@
     <script>
         let resolvedCards = [];
 
+        // Carica dati salvati o URL condiviso all'avvio
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharedDeck = urlParams.get('deck');
+            if (sharedDeck) {
+                try {
+                    document.getElementById('deckInput').value = decodeURIComponent(atob(sharedDeck));
+                    processDeck();
+                    return;
+                } catch (e) {
+                    console.error("Errore lettura deck condiviso", e);
+                }
+            }
+
+            const savedDeck = localStorage.getItem('yugiproxy_last_deck');
+            if (savedDeck) {
+                document.getElementById('deckInput').value = savedDeck;
+            }
+        });
+
         async function processDeck() {
             const text = document.getElementById('deckInput').value.trim();
-            const lang = document.getElementById('langSelect').value;
             const statusMsg = document.getElementById('statusMessage');
             const grid = document.getElementById('cardGrid');
             const countBadge = document.getElementById('cardCountBadge');
             const exportPanel = document.getElementById('exportPanel');
+            const statsBox = document.getElementById('statsBox');
 
             if (!text) {
                 alert('Inserisci almeno una carta nella lista!');
                 return;
             }
+
+            // Salva nel browser
+            localStorage.setItem('yugiproxy_last_deck', text);
 
             const lines = text.split('\n');
             let parsedItems = [];
@@ -166,29 +209,45 @@
             statusMsg.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-amber-500"></i><p class="text-sm text-slate-300">Interrogazione database YGOPRODECK in corso...</p>';
             grid.innerHTML = '';
             exportPanel.classList.add('hidden');
+            statsBox.classList.add('hidden');
 
             resolvedCards = [];
             let totalCardsCount = 0;
+            let countMonsters = 0;
+            let countSpells = 0;
+            let countTraps = 0;
 
             for (let item of parsedItems) {
                 try {
                     const encodedName = encodeURIComponent(item.name);
-                    const response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}&language=${lang}`);
+                    const response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}`);
                     
-                    if (!response.ok) {
-                        const fallbackResponse = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}&language=en`);
-                        if (!fallbackResponse.ok) continue;
-                        const fallbackData = await fallbackResponse.json();
-                        if (fallbackData.data && fallbackData.data.length > 0) {
-                            addCardData(fallbackData.data[0], item.qty, lang);
-                            totalCardsCount += item.qty;
-                        }
-                        continue;
-                    }
+                    if (!response.ok) continue;
 
                     const data = await response.json();
                     if (data.data && data.data.length > 0) {
-                        addCardData(data.data[0], item.qty, lang);
+                        const cardObj = data.data[0];
+                        const imgUrl = cardObj.card_images[0].image_url;
+                        const type = cardObj.type ? cardObj.type.toLowerCase() : '';
+
+                        let category = 'monster';
+                        if (type.includes('spell') || type.includes('magia')) {
+                            category = 'spell';
+                            countSpells += item.qty;
+                        } else if (type.includes('trap') || type.includes('trappola')) {
+                            category = 'trap';
+                            countTraps += item.qty;
+                        } else {
+                            countMonsters += item.qty;
+                        }
+
+                        for (let i = 0; i < item.qty; i++) {
+                            resolvedCards.push({
+                                name: cardObj.name,
+                                imgUrl: imgUrl,
+                                category: category
+                            });
+                        }
                         totalCardsCount += item.qty;
                     }
                 } catch (err) {
@@ -201,60 +260,17 @@
 
             if (resolvedCards.length > 0) {
                 exportPanel.classList.remove('hidden');
+                statsBox.classList.remove('hidden');
+                
+                document.getElementById('statTotal').innerText = totalCardsCount;
+                document.getElementById('statMonsters').innerText = countMonsters;
+                document.getElementById('statSpells').innerText = countSpells;
+                document.getElementById('statTraps').innerText = countTraps;
+
                 renderGrid();
             } else {
                 statusMsg.style.display = 'block';
-                statusMsg.innerHTML = '<p class="text-sm text-red-400">Nessuna carta trovata. Controlla l\'ortografia o prova in inglese.</p>';
-            }
-        }
-
-        function addCardData(cardObj, qty, lang) {
-            const cardId = cardObj.id;
-            let imgUrl = cardObj.card_images[0].image_url;
-
-            // Se è selezionata una lingua diversa dall'inglese, verifichiamo nei set della carta
-            // se esiste una stampa specifica con codice regionale corrispondente (es. -IT per italiano)
-            if (lang !== 'en' && cardObj.card_sets) {
-                const langCodeMap = { 'it': '-IT', 'fr': '-FR', 'de': '-DE', 'es': '-SP' };
-                const targetCode = langCodeMap[lang];
-
-                const localizedSet = cardObj.card_sets.find(set => set.set_code && set.set_code.includes(targetCode));
-                if (localizedSet) {
-                    // Se troviamo un set localizzato, cerchiamo se c'è un'immagine specifica o forziamo l'artwork corrispondente se censurato/differente
-                    // Per la maggior parte delle carte, l'ID dell'immagine localizzata corrisponde se gestita dall'archivio europeo.
-                }
-            }
-
-            // Metodo alternativo tramite endpoint di traduzione immagine ufficiale YGOPRODECK se disponibile
-            // Forziamo il recupero dell'immagine tradotta tramite il parametro aggiuntivo dell'URL CDN se supportato, 
-            // altrimenti usiamo l'immagine standard della carta tradotta testualmente.
-            // Nota: YGOPRODECK fornisce le immagini localizzate tramite il set code o direttamente sul server immagini secondario.
-            if (lang === 'it') {
-                // Verifichiamo se l'oggetto ha immagini multiple (spesso le stampe localizzate hanno url differenti o varianti)
-                // Selezioniamo la prima immagine disponibile associata alla stampa localizzata europea se presente
-                const euroImage = cardObj.card_images.find(img => img.image_url.includes('art_crop') || img.image_url);
-                if (euroImage) {
-                    imgUrl = euroImage.image_url;
-                }
-            }
-
-            // Per garantire che l'immagine segua la lingua dell'interfaccia quando l'API restituisce la controparte localizzata:
-            if (cardObj.misc_info && cardObj.misc_info.length > 0) {
-                // Alcune carte hanno riferimenti di traduzione nei dati
-            }
-
-            // Nota: L'API ufficiale di Ygoprodeck restituisce l'immagine localizzata corretta solo se viene interrogata specificamente 
-            // passando l'edizione esatta del set europeo. Utilizziamo il blocco delle immagini secondarie se presenti nell'array card_images.
-            if (lang !== 'en' && cardObj.card_images.length > 1) {
-                // Se ci sono più immagini (es. artworks alternativi o stampe internazionali), prendiamo quella corretta
-                imgUrl = cardObj.card_images[0].image_url;
-            }
-
-            for (let i = 0; i < qty; i++) {
-                resolvedCards.push({
-                    name: cardObj.name,
-                    imgUrl: imgUrl
-                });
+                statusMsg.innerHTML = '<p class="text-sm text-red-400">Nessuna carta trovata. Controlla l\'ortografia.</p>';
             }
         }
 
@@ -272,6 +288,22 @@
                     </div>
                 `;
                 grid.appendChild(div);
+            });
+        }
+
+        function shareDeck() {
+            const text = document.getElementById('deckInput').value.trim();
+            if (!text) {
+                alert('Inserisci prima una decklist da condividere!');
+                return;
+            }
+            const encoded = btoa(encodeURIComponent(text));
+            const shareUrl = `${window.location.origin}${window.location.pathname}?deck=${encoded}`;
+            
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert('Link copiato negli appunti! Mandalo pure ai tuoi amici.');
+            }).catch(() => {
+                prompt('Copia questo link:', shareUrl);
             });
         }
 
@@ -295,6 +327,7 @@
         async function generatePDF() {
             if (resolvedCards.length === 0) return;
 
+            const includeBacks = document.getElementById('includeBacks').checked;
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({
                 orientation: 'portrait',
@@ -313,6 +346,7 @@
             const marginLeft = (210 - gridWidth) / 2;
             const marginTop = (297 - gridHeight) / 2;
 
+            // 1. Stampa le pagine delle carte
             for (let i = 0; i < resolvedCards.length; i++) {
                 const pageIndex = Math.floor(i / cardsPerPage);
                 const posOnPage = i % cardsPerPage;
@@ -345,8 +379,35 @@
                 }
             }
 
+            // 2. Se richiesto, aggiunge i retro delle carte speculari per la stampa fronte-retro
+            if (includeBacks) {
+                const totalPages = Math.ceil(resolvedCards.length / cardsPerPage);
+                const cardBackUrl = "https://images.ygoprodeck.com/images/other/card-back.jpg";
+                const base64Back = await getBase64ImageFromUrl(cardBackUrl);
+
+                for (let p = 0; p < totalPages; p++) {
+                    doc.addPage();
+                    // Per il fronte-retro a specchio, invertiamo le colonne in orizzontale (c = 2 - c) 
+                    // in modo che stampando il foglio si allineino perfettamente sul retro.
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            const mirroredCol = (cols - 1) - c;
+                            const x = marginLeft + (mirroredCol * cardWidth);
+                            const y = marginTop + (r * cardHeight);
+
+                            try {
+                                doc.addImage(base64Back, 'JPG', x, y, cardWidth, cardHeight);
+                            } catch (err) {
+                                console.error("Errore aggiunta retro PDF:", err);
+                            }
+                        }
+                    }
+                }
+            }
+
             doc.save('yugiproxy-deck.pdf');
         }
     </script>
 </body>
 </html>
+ 
