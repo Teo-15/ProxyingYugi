@@ -26,7 +26,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold tracking-tight text-white">YugiProxy <span class="text-amber-500 text-xs px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 align-middle">Edison / Retro Ready</span></h1>
-                    <p class="text-xs text-slate-400">Generatore di proxy avanzato</p>
+                    <p class="text-xs text-slate-400">Generatore di proxy avanzato multilingua</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2">
@@ -49,13 +49,25 @@
                     <i class="fa-solid fa-list-check text-amber-500"></i> Incolla la tua Decklist
                 </h2>
 
+                <!-- Language Selector -->
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Lingua di Ricerca Testo</label>
+                    <select id="langSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-amber-500 transition-colors cursor-pointer">
+                        <option value="it" selected>Italiano</option>
+                        <option value="en">English</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="es">Español</option>
+                    </select>
+                </div>
+
                 <!-- Textarea -->
                 <div class="mb-4">
                     <div class="flex justify-between items-center mb-1.5">
                         <label class="text-xs font-medium text-slate-400 uppercase tracking-wider">Main, Extra & Side</label>
                         <span class="text-[11px] text-slate-500">Usa le sezioni standard</span>
                     </div>
-                    <textarea id="deckInput" rows="12" placeholder="# Main Deck&#10;3 Tifone Spaziale Mistico&#10;2 Cyber Drago&#10;1 Giudizio Solenne&#10;&#10;# Extra Deck&#10;1 Drago End Suvversivo&#10;&#10;# Side Deck&#10;2 Decreto Reale" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm font-mono text-slate-200 focus:outline-none focus:border-amber-500 transition-colors resize-y"></textarea>
+                    <textarea id="deckInput" rows="10" placeholder="# Main Deck&#10;3 Tifone Spaziale Mistico&#10;2 Cyber Drago&#10;1 Giudizio Solenne" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm font-mono text-slate-200 focus:outline-none focus:border-amber-500 transition-colors resize-y"></textarea>
                 </div>
 
                 <!-- Action Button -->
@@ -140,7 +152,6 @@
     <script>
         let resolvedCards = [];
 
-        // Carica dati salvati o URL condiviso all'avvio
         window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const sharedDeck = urlParams.get('deck');
@@ -162,6 +173,7 @@
 
         async function processDeck() {
             const text = document.getElementById('deckInput').value.trim();
+            const lang = document.getElementById('langSelect').value;
             const statusMsg = document.getElementById('statusMessage');
             const grid = document.getElementById('cardGrid');
             const countBadge = document.getElementById('cardCountBadge');
@@ -173,7 +185,6 @@
                 return;
             }
 
-            // Salva nel browser
             localStorage.setItem('yugiproxy_last_deck', text);
 
             const lines = text.split('\n');
@@ -220,9 +231,12 @@
             for (let item of parsedItems) {
                 try {
                     const encodedName = encodeURIComponent(item.name);
-                    const response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}`);
+                    let response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}&language=${lang}`);
                     
-                    if (!response.ok) continue;
+                    if (!response.ok) {
+                        response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}`);
+                        if (!response.ok) continue;
+                    }
 
                     const data = await response.json();
                     if (data.data && data.data.length > 0) {
@@ -346,7 +360,6 @@
             const marginLeft = (210 - gridWidth) / 2;
             const marginTop = (297 - gridHeight) / 2;
 
-            // 1. Stampa le pagine delle carte
             for (let i = 0; i < resolvedCards.length; i++) {
                 const pageIndex = Math.floor(i / cardsPerPage);
                 const posOnPage = i % cardsPerPage;
@@ -379,7 +392,6 @@
                 }
             }
 
-            // 2. Se richiesto, aggiunge i retro delle carte speculari per la stampa fronte-retro
             if (includeBacks) {
                 const totalPages = Math.ceil(resolvedCards.length / cardsPerPage);
                 const cardBackUrl = "https://images.ygoprodeck.com/images/other/card-back.jpg";
@@ -387,8 +399,6 @@
 
                 for (let p = 0; p < totalPages; p++) {
                     doc.addPage();
-                    // Per il fronte-retro a specchio, invertiamo le colonne in orizzontale (c = 2 - c) 
-                    // in modo che stampando il foglio si allineino perfettamente sul retro.
                     for (let r = 0; r < rows; r++) {
                         for (let c = 0; c < cols; c++) {
                             const mirroredCol = (cols - 1) - c;
@@ -410,4 +420,3 @@
     </script>
 </body>
 </html>
- 
