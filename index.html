@@ -3,813 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YugiProxy - Generatore di Proxy per Yu-Gi-Oh!</title>
-    <!-- Tailwind CSS for styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- jsPDF for client-side PDF generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- FontAwesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>YugiProxy - Generatore Proxy Edison Format</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        textarea {
+            width: 100%;
+            height: 180px;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #output {
+            margin-top: 25px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        .proxy-card {
+            border: 2px dashed #999;
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+            background: #fff;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .proxy-card span {
+            font-size: 13px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        @media print {
+            body { background: none; padding: 0; }
+            .container { box-shadow: none; padding: 0; max-width: 100%; }
+            textarea, button, h1, p { display: none; }
+            #output { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+            .proxy-card { border: 1px solid #000; page-break-inside: avoid; }
+        }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-slate-950">
+<body>
 
-    <!-- Header -->
-    <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="bg-amber-500 text-slate-950 p-2.5 rounded-xl font-black text-xl shadow-lg shadow-amber-500/20">
-                    <i class="fa-solid fa-clone"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold tracking-tight text-white">YugiProxy <span class="text-amber-500 text-xs px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 align-middle">Multi-Banlist Ready</span></h1>
-                    <p class="text-xs text-slate-400">Con selettore formati storici e controllo restrizioni</p>
-                </div>
-            </div>
-            <div class="flex items-center space-x-2">
-                <button onclick="shareDeck()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer">
-                    <i class="fa-solid fa-share-nodes text-amber-500"></i> Condividi
-                </button>
-            </div>
-        </div>
-    </header>
+    <div class="container">
+        <h1>YugiProxy Generator</h1>
+        <p>Incolla la tua deck list (es. <em>3 Allure of Darkness</em>, <em>2 Trap Dustshoot</em>):</p>
+        <textarea id="decklist" placeholder="3 Allure of Darkness&#10;2 Trap Dustshoot&#10;1 Monster Reborn"></textarea>
+        <br>
+        <button onclick="generaProxy()">Genera e Formatta Proxy</button>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        <!-- Left Panel: Controls & Inputs -->
-        <div class="lg:col-span-5 space-y-6">
-            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden space-y-4">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none"></div>
-                
-                <div class="flex justify-between items-center">
-                    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-list-check text-amber-500"></i> Inserisci Decklist
-                    </h2>
-                    <button onclick="clearAll()" class="text-xs text-slate-400 hover:text-red-400 transition-colors flex items-center gap-1 cursor-pointer">
-                        <i class="fa-solid fa-trash-can"></i> Pulisci tutto
-                    </button>
-                </div>
-
-                <!-- Formato Banlist Selector -->
-                <div>
-                    <label class="block text-xs font-medium text-amber-400 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
-                        <i class="fa-solid fa-scale-balanced"></i> Formato / Banlist di Controllo
-                    </label>
-                    <select id="formatSelect" onchange="processDeck()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-amber-300 font-medium focus:outline-none focus:border-amber-500 transition-colors cursor-pointer">
-                        <optgroup label="Formati Retrò & Storici">
-                            <option value="edison" selected>Edison Format (Marzo 2010)</option>
-                            <option value="goat">GOAT Format (Aprile 2005)</option>
-                            <option value="hat">HAT Format (Luglio 2014)</option>
-                            <option value="tengu">Tengu Plant (Settembre 2011)</option>
-                            <option value="roc">Reaper Format / ROC (Settembre 2006)</option>
-                        </optgroup>
-                        <optgroup label="Formati Moderni & Standard">
-                            <option value="tcg">TCG (Avanzato Attuale)</option>
-                            <option value="advanced_2020">Advanced 2020 (Master Rule 2020)</option>
-                            <option value="none">Nessun controllo banlist</option>
-                        </optgroup>
-                    </select>
-                </div>
-
-                <!-- Language Selector -->
-                <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Lingua di Ricerca Testo</label>
-                    <select id="langSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-amber-500 transition-colors cursor-pointer">
-                        <option value="it" selected>Italiano</option>
-                        <option value="en">English</option>
-                        <option value="fr">Français</option>
-                        <option value="de">Deutsch</option>
-                        <option value="es">Español</option>
-                    </select>
-                </div>
-
-                <!-- Main Deck Textarea -->
-                <div>
-                    <label class="block text-xs font-medium text-amber-400 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
-                        <i class="fa-solid fa-layer-group"></i> Main Deck
-                    </label>
-                    <textarea id="mainInput" rows="6" placeholder="3 Spolverino dell'arpia&#10;2 Cyber Drago&#10;1 Giudizio Solenne" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500 transition-colors resize-y"></textarea>
-                </div>
-
-                <!-- Extra Deck Textarea -->
-                <div>
-                    <label class="block text-xs font-medium text-purple-400 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
-                        <i class="fa-solid fa-star"></i> Extra Deck
-                    </label>
-                    <textarea id="extraInput" rows="3" placeholder="1 Drago End Subversivo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500 transition-colors resize-y"></textarea>
-                </div>
-
-                <!-- Side Deck Textarea -->
-                <div>
-                    <label class="block text-xs font-medium text-emerald-400 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
-                        <i class="fa-solid fa-right-left"></i> Side Deck
-                    </label>
-                    <textarea id="sideInput" rows="3" placeholder="2 Decreto Reale" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500 transition-colors resize-y"></textarea>
-                </div>
-
-                <!-- Action Button -->
-                <button id="processBtn" onclick="processDeck()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 text-sm cursor-pointer mt-2">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Raccogli Carte & Anteprima
-                </button>
-            </div>
-
-            <!-- Export Panel -->
-            <div id="exportPanel" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl hidden space-y-4">
-                <h3 class="text-md font-semibold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-file-export text-amber-500"></i> Esportazione
-                </h3>
-                
-                <div class="flex items-center gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-                    <input type="checkbox" id="includeBacks" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
-                    <label for="includeBacks" class="text-xs text-slate-300 cursor-pointer select-none">
-                        Includi pagine con il **retro delle carte** (per stampa fronte-retro)
-                    </label>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="generatePDF()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-3 rounded-xl transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 text-xs cursor-pointer">
-                        <i class="fa-solid fa-file-pdf"></i> Scarica PDF
-                    </button>
-                    <button onclick="downloadYDK()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-3 px-3 rounded-xl transition-all border border-slate-700 flex items-center justify-center gap-2 text-xs cursor-pointer">
-                        <i class="fa-solid fa-file-lines"></i> File .YDK
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Panel: Preview & Stats -->
-        <div class="lg:col-span-7 space-y-6">
-            
-            <!-- Stats & Banlist Warnings Box -->
-            <div id="statsBox" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl hidden space-y-3">
-                <div class="grid grid-cols-4 gap-2 text-center">
-                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
-                        <span class="block text-[10px] text-slate-400 uppercase tracking-wider">Totali</span>
-                        <span id="statTotal" class="text-lg font-bold text-white">0</span>
-                    </div>
-                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
-                        <span class="block text-[10px] text-blue-400 uppercase tracking-wider">Mostri</span>
-                        <span id="statMonsters" class="text-lg font-bold text-blue-400">0</span>
-                    </div>
-                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
-                        <span class="block text-[10px] text-emerald-400 uppercase tracking-wider">Magie</span>
-                        <span id="statSpells" class="text-lg font-bold text-emerald-400">0</span>
-                    </div>
-                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
-                        <span class="block text-[10px] text-pink-400 uppercase tracking-wider">Trappole</span>
-                        <span id="statTraps" class="text-lg font-bold text-pink-400">0</span>
-                    </div>
-                </div>
-                <!-- Banlist Alert Container -->
-                <div id="banlistWarnings" class="hidden bg-red-950/40 border border-red-900/50 rounded-xl p-3 text-xs text-red-300 space-y-1">
-                    <div id="banlistTitle" class="font-semibold flex items-center gap-1.5 text-red-400"><i class="fa-solid fa-triangle-exclamation"></i> Avvisi Banlist:</div>
-                    <ul id="banlistList" class="list-disc list-inside space-y-0.5 text-[11px]"></ul>
-                </div>
-                <!-- Banlist OK Container -->
-                <div id="banlistOk" class="hidden bg-emerald-950/40 border border-emerald-900/50 rounded-xl p-3 text-xs text-emerald-300 flex items-center gap-2">
-                    <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
-                    <span>Nessuna violazione rilevata per la banlist selezionata.</span>
-                </div>
-            </div>
-
-            <!-- Preview Box -->
-            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl min-h-[450px] flex flex-col">
-                <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
-                    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-images text-amber-500"></i> Anteprima (Clicca per cambiare Artwork)
-                    </h2>
-                    <div id="cardCountBadge" class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-medium">
-                        0 carte caricate
-                    </div>
-                </div>
-
-                <div id="statusMessage" class="my-auto text-center py-12 text-slate-500">
-                    <i class="fa-solid fa-layer-group text-4xl mb-3 opacity-30"></i>
-                    <p class="text-sm">Compila i campi a sinistra e clicca su "Raccogli Carte" per iniziare.</p>
-                </div>
-
-                <div id="previewContainer" class="space-y-6 overflow-y-auto max-h-[600px] pr-1"></div>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- Modal per Selezione Artwork -->
-    <div id="artworkModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 id="modalCardTitle" class="text-base font-semibold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-wand-magic text-amber-500"></i> Seleziona Artwork
-                </h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <p class="text-xs text-slate-400">Scegli quale versione o stampa desideri utilizzare per questa carta:</p>
-            <div id="modalArtworksGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-3 overflow-y-auto p-1 max-h-[60vh]"></div>
-        </div>
+        <div id="output"></div>
     </div>
 
-    <!-- Footer -->
-    <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500 bg-slate-900/40">
-        <p>YugiProxy &bull; Sviluppato per la community di duellanti e formati retrò.</p>
-    </footer>
-
-    <!-- JavaScript Logic -->
     <script>
-        let deckSections = { main: [], extra: [], side: [] };
-        let ydkCardIds = { main: [], extra: [], side: [] };
-        let currentEditingCardRef = null;
-
-        // Mappa estesa di banlist storiche e competitive (Edison, GOAT, HAT, Tengu, ROC, Advanced 2020)
-        const RETRO_BANLISTS = {
-            edison: {
-                "pot of greed": 0, "graceful charity": 0, "confiscation": 0, "delinquent duo": 0,
-                "the forceful sentry": 0, "painful choice": 0, "snatch steal": 0, "harpie's feather duster": 0,
-                "heavy storm": 1, "mystical space typhoon": 1, "brain control": 1,
-                "mind control": 2, "charge of the light brigade": 2, "solar recharge": 2,
-                "summoner monk": 1, "necrogardna": 1, "tragoedia": 1, "gorz the emissary of darkness": 1,
-                "monster reborn": 1, "dark hole": 0, "torrential tribute": 1, "mirror force": 1,
-                "solemn judgment": 2, "bottomless trap hole": 2, "trap dustshoot": 1,
-                "compulsory evacuation device": 3, "dimensional prison": 3, "call of the haunted": 1,
-                "future fusion": 1, "overload fusion": 1, "giant trunade": 1, "book of taiyou": 3,
-                "destiny draw": 2, "malicious": 2, "destiny hero - malicious": 2, "card destruction": 1,
-                "black rose dragon": 1, "brionac, dragon of the ice barrier": 1, "goyo guardian": 1
-            },
-            goat: {
-                "pot of greed": 0, "graceful charity": 0, "confiscation": 0, "delinquent duo": 0,
-                "the forceful sentry": 0, "painful choice": 0, "snatch steal": 1, "heavy storm": 1,
-                "mystical space typhoon": 2, "monster reborn": 1, "premature burial": 1,
-                "ring of destruction": 1, "mirror force": 1, "torrential tribute": 1, "solemn judgment": 3,
-                "tribe-infecting virus": 1, "black luster soldier - envoy of the beginning": 0,
-                "chaos empress dragon - envoy of the end": 0, "yata-garasu": 0, "harpie's feather duster": 0
-            },
-            hat: {
-                "heavy storm": 0, "monster reborn": 0, "dark hole": 1, "solemn judgment": 0,
-                "solemn warning": 1, "bottomless trap hole": 1, "torrential tribute": 1,
-                "compulsory evacuation device": 1, "traptrix myrmeleo": 3, "traptrix dionaea": 3,
-                "fire king high avatar garunix": 3, "brotherhood of the fire fist - bear": 1,
-                "number 101: silent honor ark": 1, "evilswarm exciton knight": 1, "lavalval chain": 1,
-                "pot of duality": 3, "upstart goblin": 3, "mystical space typhoon": 3,
-                "harpie's feather duster": 0, "snatch steal": 0
-            },
-            tengu: {
-                "reborn tengu": 3, "spore": 1, "glow-up bulb": 1, "debris dragon": 2,
-                "lonefire blossom": 1, "glow-up bulb": 1, "mind control": 1, "heavy storm": 1,
-                "dark hole": 1, "monster reborn": 1, "mystical space typhoon": 2,
-                "solemn judgment": 1, "solemn warning": 2, "torrential tribute": 1,
-                "traptrix dionaea": 0, "brionac, dragon of the ice barrier": 1,
-                "harpie's feather duster": 0
-            },
-            roc: {
-                "pot of greed": 1, "graceful charity": 1, "delinquent duo": 1, "confiscation": 1,
-                "the forceful sentry": 1, "painful choice": 1, "snatch steal": 1, "heavy storm": 1,
-                "mystical space typhoon": 1, "monster reborn": 1, "premature burial": 1,
-                "ring of destruction": 1, "mirror force": 1, "torrential tribute": 1,
-                "black luster soldier - envoy of the beginning": 1, "chaos emperor dragon - envoy of the end": 1,
-                "yata-garasu": 1, "tribe-infecting virus": 1, "harpie's feather duster": 0
-            },
-            advanced_2020: {
-                "harpie's feather duster": 1, "monster reborn": 1, "dark hole": 1,
-                "pot of greed": 0, "graceful charity": 0, "heavy storm": 0,
-                "mystical space typhoon": 3, "traptrix myrmeleo": 3
-            }
-        };
-
-        // Mappa di traduzione/alias comuni (italiano -> chiave inglese ufficiale)
-        const CARD_ALIASES = {
-            "spolverino dell'arpia": "harpie's feather duster",
-            "spolverino dell' arpia": "harpie's feather duster",
-            "tifone spaziale mistico": "mystical space typhoon",
-            "giudizio solenne": "solemn judgment",
-            "mostro resurrezione": "monster reborn",
-            "bomba dimensionale": "dimensional prison",
-            "tributo torrenziale": "torrential tribute",
-            "forza speculare": "mirror force",
-            "tempesta potente": "heavy storm",
-            "denise la furbacchiona": "delinquent duo",
-            "due di denari": "delinquent duo",
-            "buco nero": "dark hole"
-        };
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const sharedDeck = urlParams.get('deck');
-            if (sharedDeck) {
-                try {
-                    const decoded = JSON.parse(decodeURIComponent(atob(sharedDeck)));
-                    if (decoded.main) document.getElementById('mainInput').value = decoded.main;
-                    if (decoded.extra) document.getElementById('extraInput').value = decoded.extra;
-                    if (decoded.side) document.getElementById('sideInput').value = decoded.side;
-                    processDeck();
-                    return;
-                } catch (e) {
-                    console.error("Errore lettura deck condiviso", e);
-                }
-            }
-
-            if (localStorage.getItem('yugiproxy_main')) document.getElementById('mainInput').value = localStorage.getItem('yugiproxy_main');
-            if (localStorage.getItem('yugiproxy_extra')) document.getElementById('extraInput').value = localStorage.getItem('yugiproxy_extra');
-            if (localStorage.getItem('yugiproxy_side')) document.getElementById('sideInput').value = localStorage.getItem('yugiproxy_side');
-        });
-
-        function clearAll() {
-            document.getElementById('mainInput').value = '';
-            document.getElementById('extraInput').value = '';
-            document.getElementById('sideInput').value = '';
-            localStorage.removeItem('yugiproxy_main');
-            localStorage.removeItem('yugiproxy_extra');
-            localStorage.removeItem('yugiproxy_side');
-            location.reload();
-        }
-
-        function parseTextarea(text) {
+        function generaProxy() {
+            const text = document.getElementById('decklist').value;
             const lines = text.split('\n');
-            let items = [];
-            for (let line of lines) {
-                line = line.trim();
-                if (!line || line.startsWith('#') || line.startsWith('//')) continue;
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = '';
 
+            let totalProxies = 0;
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return;
+
+                // Regex per catturare quantità e nome carta (es. "3 Allure of Darkness")
+                const match = trimmed.match(/^(\d+)\s+(.+)$/);
                 let qty = 1;
-                let cardName = line;
+                let cardName = trimmed;
 
-                const leadingMatch = line.match(/^([0-9]+)[xX]?\s+(.+)$/);
-                const trailingMatch = line.match(/^(.+?)\s+[xX]([0-9]+)$/);
-
-                if (leadingMatch) {
-                    qty = parseInt(leadingMatch[1]);
-                    cardName = leadingMatch[2].trim();
-                } else if (trailingMatch) {
-                    cardName = trailingMatch[1].trim();
-                    qty = parseInt(trailingMatch[2]);
+                if (match) {
+                    qty = parseInt(match[1], 10);
+                    cardName = match[2];
                 }
 
-                items.push({ name: cardName, qty: qty });
-            }
-            return items;
-        }
-
-        async function fetchCardData(itemName, lang) {
-            const encodedName = encodeURIComponent(itemName);
-            let response = null;
-            let cardObj = null;
-
-            try {
-                // Tentativo 1: Con la lingua selezionata
-                response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}&language=${lang}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.data && data.data.length > 0) cardObj = data.data[0];
-                }
-
-                // Tentativo 2: Fallback in inglese se fallisce
-                if (!cardObj) {
-                    response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.data && data.data.length > 0) cardObj = data.data[0];
-                    }
-                }
-
-                if (cardObj) {
-                    const type = cardObj.type ? cardObj.type.toLowerCase() : '';
-                    let category = 'monster';
-                    if (type.includes('spell') || type.includes('magia')) {
-                        category = 'spell';
-                    } else if (type.includes('trap') || type.includes('trappola')) {
-                        category = 'trap';
-                    }
-
-                    let artworks = [];
-                    if (cardObj.card_images) {
-                        artworks = cardObj.card_images.map(img => ({
-                            id: img.id,
-                            imgUrl: img.image_url
-                        }));
-                    }
-
-                    let rarity = "Comune / Standard";
-                    if (cardObj.card_sets && cardObj.card_sets.length > 0) {
-                        rarity = cardObj.card_sets[0].set_rarity;
-                    }
-
-                    let limits = { edison: 3, tcg: 3, goat: 3, hat: 3, tengu: 3, roc: 3, advanced_2020: 3 };
-                    
-                    const engName = (cardObj.name || "").toLowerCase();
-                    const searchedName = itemName.toLowerCase();
-                    const translatedKey = CARD_ALIASES[searchedName] || CARD_ALIASES[engName] || engName;
-
-                    ['edison', 'goat', 'hat', 'tengu', 'roc', 'advanced_2020'].forEach(fmt => {
-                        const banMap = RETRO_BANLISTS[fmt];
-                        if (banMap[translatedKey] !== undefined) {
-                            limits[fmt] = banMap[translatedKey];
-                        } else if (banMap[engName] !== undefined) {
-                            limits[fmt] = banMap[engName];
-                        } else if (banMap[searchedName] !== undefined) {
-                            limits[fmt] = banMap[searchedName];
-                        }
-                    });
-
-                    // Controllo banlist TCG ufficiale dall'API se presente
-                    if (cardObj.banlist_info && cardObj.banlist_info.ban_tcg) {
-                        const bTcg = cardObj.banlist_info.ban_tcg;
-                        if (bTcg === 'Banned') limits.tcg = 0;
-                        else if (bTcg === 'Limited') limits.tcg = 1;
-                        else if (bTcg === 'Semi-Limited') limits.tcg = 2;
-                    }
-
-                    return {
-                        id: cardObj.id,
-                        name: cardObj.name,
-                        imgUrl: cardObj.card_images[0].image_url,
-                        category: category,
-                        rarity: rarity,
-                        artworks: artworks,
-                        limits: limits
-                    };
-                }
-            } catch (err) {
-                console.error('Errore durante il recupero della carta:', itemName, err);
-            }
-            return null;
-        }
-
-        async function processDeck() {
-            const mainText = document.getElementById('mainInput').value.trim();
-            const extraText = document.getElementById('extraInput').value.trim();
-            const sideText = document.getElementById('sideInput').value.trim();
-            const lang = document.getElementById('langSelect').value;
-            const format = document.getElementById('formatSelect').value;
-            
-            const statusMsg = document.getElementById('statusMessage');
-            const container = document.getElementById('previewContainer');
-            const countBadge = document.getElementById('cardCountBadge');
-            const exportPanel = document.getElementById('exportPanel');
-            const statsBox = document.getElementById('statsBox');
-
-            if (!mainText && !extraText && !sideText) {
-                alert('Inserisci almeno una carta in una delle sezioni!');
-                return;
-            }
-
-            localStorage.setItem('yugiproxy_main', mainText);
-            localStorage.setItem('yugiproxy_extra', extraText);
-            localStorage.setItem('yugiproxy_side', sideText);
-
-            const parsedMain = parseTextarea(mainText);
-            const parsedExtra = parseTextarea(extraText);
-            const parsedSide = parseTextarea(sideText);
-
-            if (parsedMain.length === 0 && parsedExtra.length === 0 && parsedSide.length === 0) {
-                alert('Nessuna carta valida trovata nelle liste.');
-                return;
-            }
-
-            statusMsg.style.display = 'block';
-            statusMsg.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-amber-500"></i><p class="text-sm text-slate-300">Interrogazione database YGOPRODECK in corso...</p>';
-            container.innerHTML = '';
-            exportPanel.classList.add('hidden');
-            statsBox.classList.add('hidden');
-
-            deckSections = { main: [], extra: [], side: [] };
-            ydkCardIds = { main: [], extra: [], side: [] };
-
-            let totalCardsCount = 0;
-            let countMonsters = 0;
-            let countSpells = 0;
-            let countTraps = 0;
-            let cardOccurrences = {};
-            let cardLimitsMap = {};
-
-            // Main Deck
-            let mainResolved = [];
-            for (let item of parsedMain) {
-                const cardData = await fetchCardData(item.name, lang);
-                if (cardData) {
-                    if (cardData.category === 'monster') countMonsters += item.qty;
-                    else if (cardData.category === 'spell') countSpells += item.qty;
-                    else if (cardData.category === 'trap') countTraps += item.qty;
-
-                    cardOccurrences[cardData.name] = (cardOccurrences[cardData.name] || 0) + item.qty;
-                    cardLimitsMap[cardData.name] = cardData.limits;
-
-                    for (let i = 0; i < item.qty; i++) {
-                        mainResolved.push({ ...cardData });
-                        ydkCardIds.main.push(cardData.id);
-                        totalCardsCount++;
-                    }
-                }
-            }
-            const catOrder = { monster: 0, spell: 1, trap: 2 };
-            mainResolved.sort((a, b) => catOrder[a.category] - catOrder[b.category]);
-            deckSections.main = mainResolved;
-
-            // Extra Deck
-            for (let item of parsedExtra) {
-                const cardData = await fetchCardData(item.name, lang);
-                if (cardData) {
-                    cardOccurrences[cardData.name] = (cardOccurrences[cardData.name] || 0) + item.qty;
-                    cardLimitsMap[cardData.name] = cardData.limits;
-                    for (let i = 0; i < item.qty; i++) {
-                        deckSections.extra.push({ ...cardData });
-                        ydkCardIds.extra.push(cardData.id);
-                        totalCardsCount++;
-                    }
-                }
-            }
-
-            // Side Deck
-            for (let item of parsedSide) {
-                const cardData = await fetchCardData(item.name, lang);
-                if (cardData) {
-                    cardOccurrences[cardData.name] = (cardOccurrences[cardData.name] || 0) + item.qty;
-                    cardLimitsMap[cardData.name] = cardData.limits;
-                    for (let i = 0; i < item.qty; i++) {
-                        deckSections.side.push({ ...cardData });
-                        ydkCardIds.side.push(cardData.id);
-                        totalCardsCount++;
-                    }
-                }
-            }
-
-            statusMsg.style.display = 'none';
-            countBadge.innerText = `${totalCardsCount} proxy pronte`;
-
-            if (totalCardsCount > 0) {
-                exportPanel.classList.remove('hidden');
-                statsBox.classList.remove('hidden');
-                
-                document.getElementById('statTotal').innerText = totalCardsCount;
-                document.getElementById('statMonsters').innerText = countMonsters;
-                document.getElementById('statSpells').innerText = countSpells;
-                document.getElementById('statTraps').innerText = countTraps;
-
-                checkBanlistViolations(cardOccurrences, cardLimitsMap, format);
-                renderPreview();
-            } else {
-                statusMsg.style.display = 'block';
-                statusMsg.innerHTML = '<p class="text-sm text-red-400"><i class="fa-solid fa-circle-exclamation"></i> Nessuna carta trovata. Verifica l\'ortografia o prova a selezionare "English" come lingua.</p>';
-            }
-        }
-
-        function checkBanlistViolations(occurrences, limitsMap, format) {
-            const warningBox = document.getElementById('banlistWarnings');
-            const warningTitle = document.getElementById('banlistTitle');
-            const warningList = document.getElementById('banlistList');
-            const okBox = document.getElementById('banlistOk');
-            
-            warningList.innerHTML = '';
-
-            if (format === 'none') {
-                warningBox.classList.add('hidden');
-                okBox.classList.add('hidden');
-                return;
-            }
-
-            const formatNames = {
-                edison: "Edison Format (Marzo 2010)",
-                goat: "GOAT Format (Aprile 2005)",
-                hat: "HAT Format (Luglio 2014)",
-                tengu: "Tengu Plant (Settembre 2011)",
-                roc: "Reaper Format / ROC (Settembre 2006)",
-                tcg: "TCG Avanzato Attuale",
-                advanced_2020: "Advanced 2020"
-            };
-
-            warningTitle.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Avvisi Banlist (${formatNames[format]}):`;
-            let violations = [];
-
-            for (let [cardName, count] of Object.entries(occurrences)) {
-                const limits = limitsMap[cardName] || { edison: 3, tcg: 3, goat: 3, hat: 3, tengu: 3, roc: 3, advanced_2020: 3 };
-                const limit = limits[format] !== undefined ? limits[format] : 3;
-
-                if (count > limit) {
-                    let limitText = limit === 0 ? "Bannata (0 copie)" : (limit === 1 ? "Limitata (1 copia)" : "Semi-limitata (2 copie)");
-                    violations.push(`<strong>${cardName}</strong>: presenti <strong>${count}</strong> copie (limite consentito: <em>${limitText}</em>).`);
-                }
-            }
-
-            if (violations.length > 0) {
-                warningBox.classList.remove('hidden');
-                okBox.classList.add('hidden');
-                violations.forEach(v => {
-                    const li = document.createElement('li');
-                    li.innerHTML = v;
-                    warningList.appendChild(li);
-                });
-            } else {
-                warningBox.classList.add('hidden');
-                okBox.classList.remove('hidden');
-            }
-        }
-
-        function renderPreview() {
-            const container = document.getElementById('previewContainer');
-            container.innerHTML = '';
-
-            const sectionsConfig = [
-                { key: 'main', label: 'Main Deck (Ordinato: Mostri, Magie, Trappole)', color: 'text-amber-400', items: deckSections.main },
-                { key: 'extra', label: 'Extra Deck', color: 'text-purple-400', items: deckSections.extra },
-                { key: 'side', label: 'Side Deck', color: 'text-emerald-400', items: deckSections.side }
-            ];
-
-            sectionsConfig.forEach(sec => {
-                if (sec.items.length === 0) return;
-
-                const sectionDiv = document.createElement('div');
-                sectionDiv.className = 'space-y-3';
-                sectionDiv.innerHTML = `
-                    <h3 class="text-xs font-bold uppercase tracking-wider ${sec.color} border-b border-slate-800 pb-1.5 flex items-center justify-between">
-                        <span>${sec.label}</span>
-                        <span class="text-slate-500 font-normal">(${sec.items.length} carte)</span>
-                    </h3>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="grid-${sec.key}"></div>
-                `;
-                container.appendChild(sectionDiv);
-
-                const grid = sectionDiv.querySelector(`#grid-${sec.key}`);
-                sec.items.forEach((card) => {
-                    const cardDiv = document.createElement('div');
-                    cardDiv.className = 'relative bg-slate-950 border border-slate-800 rounded-xl overflow-hidden group aspect-[59/86] shadow-md cursor-pointer';
-                    cardDiv.title = "Clicca per cambiare artwork";
-                    cardDiv.onclick = () => openArtworkModal(card);
-                    cardDiv.innerHTML = `
-                        <img src="${card.imgUrl}" alt="${card.name}" class="w-full h-full object-cover">
-                        <div class="absolute top-1.5 right-1.5 bg-slate-900/90 text-[10px] text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30 font-medium">
-                            ${card.rarity.split('/')[0]}
-                        </div>
-                        <div class="absolute inset-0 bg-slate-950/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2.5">
-                            <span class="text-xs font-semibold text-white truncate">${card.name}</span>
-                            <span class="text-[10px] text-amber-400"><i class="fa-solid fa-paintbrush"></i> Cambia Artwork</span>
-                        </div>
+                // Genera i box per ogni copia della carta con funzioni di controllo integrate
+                for (let i = 0; i < qty; i++) {
+                    totalProxies++;
+                    const cardBox = document.createElement('div');
+                    cardBox.className = 'proxy-card';
+                    cardBox.innerHTML = `
+                        <span>${cardName}</span>
+                        <div style="font-size: 10px; color: #7f8c8d;">Proxy #${totalProxies}</div>
                     `;
-                    grid.appendChild(cardDiv);
-                });
-            });
-        }
-
-        function openArtworkModal(cardInstance) {
-            currentEditingCardRef = cardInstance;
-            document.getElementById('modalCardTitle').innerHTML = `<i class="fa-solid fa-wand-magic text-amber-500"></i> Seleziona Artwork: ${cardInstance.name}`;
-            const grid = document.getElementById('modalArtworksGrid');
-            grid.innerHTML = '';
-
-            cardInstance.artworks.forEach(art => {
-                const div = document.createElement('div');
-                div.className = `relative bg-slate-950 border rounded-xl overflow-hidden aspect-[59/86] cursor-pointer transition-all ${art.imgUrl === cardInstance.imgUrl ? 'border-amber-500 ring-2 ring-amber-500/50' : 'border-slate-800 hover:border-slate-600'}`;
-                div.innerHTML = `<img src="${art.imgUrl}" alt="Artwork" class="w-full h-full object-cover">`;
-                div.onclick = () => {
-                    cardInstance.imgUrl = art.imgUrl;
-                    closeModal();
-                    renderPreview();
-                };
-                grid.appendChild(div);
+                    outputDiv.appendChild(cardBox);
+                }
             });
 
-            document.getElementById('artworkModal').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('artworkModal').classList.add('hidden');
-            currentEditingCardRef = null;
-        }
-
-        function downloadYDK() {
-            let content = "#created by YugiProxy\n#main\n";
-            ydkCardIds.main.forEach(id => content += id + "\n");
-            content += "\n#extra\n";
-            ydkCardIds.extra.forEach(id => content += id + "\n");
-            content += "\n!side\n";
-            ydkCardIds.side.forEach(id => content += id + "\n");
-
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'deck.ydk';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function shareDeck() {
-            const main = document.getElementById('mainInput').value.trim();
-            const extra = document.getElementById('extraInput').value.trim();
-            const side = document.getElementById('sideInput').value.trim();
-
-            if (!main && !extra && !side) {
-                alert('Inserisci prima almeno una sezione da condividere!');
-                return;
+            if (totalProxies === 0) {
+                outputDiv.innerHTML = '<p style="color: red;">Inserisci almeno una carta valida.</p>';
             }
-
-            const deckData = JSON.stringify({ main, extra, side });
-            const encoded = btoa(encodeURIComponent(deckData));
-            const shareUrl = `${window.location.origin}${window.location.pathname}?deck=${encoded}`;
-            
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                alert('Link copiato negli appunti!');
-            }).catch(() => {
-                prompt('Copia questo link:', shareUrl);
-            });
-        }
-
-        async function getBase64ImageFromUrl(imageUrl) {
-            try {
-                const proxyUrl = "https://images.weserv.nl/?url=" + encodeURIComponent(imageUrl);
-                const response = await fetch(proxyUrl);
-                const blob = await response.blob();
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(blob);
-                });
-            } catch (e) {
-                return imageUrl;
-            }
-        }
-
-        async function generatePDF() {
-            const allCardsToPrint = [...deckSections.main, ...deckSections.extra, ...deckSections.side];
-            if (allCardsToPrint.length === 0) return;
-
-            const includeBacks = document.getElementById('includeBacks').checked;
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a4'
-            });
-
-            const cardWidth = 59;
-            const cardHeight = 86;
-            const cols = 3;
-            const rows = 3;
-            const cardsPerPage = cols * rows;
-
-            const gridWidth = cols * cardWidth;
-            const gridHeight = rows * cardHeight;
-            const marginLeft = (210 - gridWidth) / 2;
-            const marginTop = (297 - gridHeight) / 2;
-
-            for (let i = 0; i < allCardsToPrint.length; i++) {
-                const pageIndex = Math.floor(i / cardsPerPage);
-                const posOnPage = i % cardsPerPage;
-
-                if (i > 0 && posOnPage === 0) {
-                    doc.addPage();
-                }
-
-                const r = Math.floor(posOnPage / cols);
-                const c = posOnPage % cols;
-
-                const x = marginLeft + (c * cardWidth);
-                const y = marginTop + (r * cardHeight);
-
-                const base64Img = await getBase64ImageFromUrl(allCardsToPrint[i].imgUrl);
-
-                try {
-                    doc.addImage(base64Img, 'JPG', x, y, cardWidth, cardHeight);
-                } catch (err) {
-                    console.error("Errore aggiunta immagine PDF:", err);
-                }
-
-                if (posOnPage === 0) {
-                    doc.setLineWidth(0.2);
-                    doc.setDrawColor(150, 150, 150);
-                    doc.line(5, 10, 15, 10);
-                    doc.setFontSize(8);
-                    doc.setTextColor(120, 120, 120);
-                    doc.text("1 cm (Scala 100%)", 5, 8);
-                }
-            }
-
-            if (includeBacks) {
-                const totalPages = Math.ceil(allCardsToPrint.length / cardsPerPage);
-                const cardBackUrl = "https://images.ygoprodeck.com/images/other/card-back.jpg";
-                const base64Back = await getBase64ImageFromUrl(cardBackUrl);
-
-                for (let p = 0; p < totalPages; p++) {
-                    doc.addPage();
-                    for (let r = 0; r < rows; r++) {
-                        for (let c = 0; c < cols; c++) {
-                            const mirroredCol = (cols - 1) - c;
-                            const x = marginLeft + (mirroredCol * cardWidth);
-                            const y = marginTop + (r * cardHeight);
-
-                            try {
-                                doc.addImage(base64Back, 'JPG', x, y, cardWidth, cardHeight);
-                            } catch (err) {
-                                console.error("Errore aggiunta retro PDF:", err);
-                            }
-                        }
-                    }
-                }
-            }
-
-            doc.save('yugiproxy-deck.pdf');
         }
     </script>
+
 </body>
 </html>
