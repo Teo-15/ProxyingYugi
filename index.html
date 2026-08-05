@@ -26,7 +26,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold tracking-tight text-white">YugiProxy <span class="text-amber-500 text-xs px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 align-middle">Edison / Retro Ready</span></h1>
-                    <p class="text-xs text-slate-400">Generatore di proxy avanzato multilingua</p>
+                    <p class="text-xs text-slate-400">Generatore con sezioni dedicate</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2">
@@ -40,17 +40,17 @@
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        <!-- Left Panel: Controls & Input -->
+        <!-- Left Panel: Controls & Inputs -->
         <div class="lg:col-span-5 space-y-6">
-            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden space-y-4">
                 <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none"></div>
                 
-                <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-list-check text-amber-500"></i> Incolla la tua Decklist
+                <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-amber-500"></i> Inserisci Decklist
                 </h2>
 
                 <!-- Language Selector -->
-                <div class="mb-4">
+                <div>
                     <label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Lingua di Ricerca Testo</label>
                     <select id="langSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-amber-500 transition-colors cursor-pointer">
                         <option value="it" selected>Italiano</option>
@@ -61,17 +61,32 @@
                     </select>
                 </div>
 
-                <!-- Textarea -->
-                <div class="mb-4">
-                    <div class="flex justify-between items-center mb-1.5">
-                        <label class="text-xs font-medium text-slate-400 uppercase tracking-wider">Main, Extra & Side</label>
-                        <span class="text-[11px] text-slate-500">Usa le sezioni standard</span>
-                    </div>
-                    <textarea id="deckInput" rows="10" placeholder="# Main Deck&#10;3 Tifone Spaziale Mistico&#10;2 Cyber Drago&#10;1 Giudizio Solenne" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm font-mono text-slate-200 focus:outline-none focus:border-amber-500 transition-colors resize-y"></textarea>
+                <!-- Main Deck Textarea -->
+                <div>
+                    <label class="block text-xs font-medium text-amber-400 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-layer-group"></i> Main Deck
+                    </label>
+                    <textarea id="mainInput" rows="6" placeholder="3 Tifone Spaziale Mistico&#10;2 Cyber Drago&#10;1 Giudizio Solenne" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500 transition-colors resize-y"></textarea>
+                </div>
+
+                <!-- Extra Deck Textarea -->
+                <div>
+                    <label class="block text-xs font-medium text-purple-400 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-star"></i> Extra Deck
+                    </label>
+                    <textarea id="extraInput" rows="3" placeholder="1 Drago End Subversivo&#10;1 Brron, Mad King of Dark World" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500 transition-colors resize-y"></textarea>
+                </div>
+
+                <!-- Side Deck Textarea -->
+                <div>
+                    <label class="block text-xs font-medium text-emerald-400 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-right-left"></i> Side Deck
+                    </label>
+                    <textarea id="sideInput" rows="3" placeholder="2 Decreto Reale" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500 transition-colors resize-y"></textarea>
                 </div>
 
                 <!-- Action Button -->
-                <button id="processBtn" onclick="processDeck()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 text-sm cursor-pointer">
+                <button id="processBtn" onclick="processDeck()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 text-sm cursor-pointer mt-2">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> Raccogli Carte & Anteprima
                 </button>
             </div>
@@ -133,7 +148,7 @@
                 <!-- Status / Loading message -->
                 <div id="statusMessage" class="my-auto text-center py-12 text-slate-500">
                     <i class="fa-solid fa-layer-group text-4xl mb-3 opacity-30"></i>
-                    <p class="text-sm">Incolla la tua lista a sinistra e clicca su "Raccogli Carte" per iniziare.</p>
+                    <p class="text-sm">Compila i campi a sinistra e clicca su "Raccogli Carte" per iniziare.</p>
                 </div>
 
                 <!-- Grid Preview container -->
@@ -157,7 +172,10 @@
             const sharedDeck = urlParams.get('deck');
             if (sharedDeck) {
                 try {
-                    document.getElementById('deckInput').value = decodeURIComponent(atob(sharedDeck));
+                    const decoded = JSON.parse(decodeURIComponent(atob(sharedDeck)));
+                    if (decoded.main) document.getElementById('mainInput').value = decoded.main;
+                    if (decoded.extra) document.getElementById('extraInput').value = decoded.extra;
+                    if (decoded.side) document.getElementById('sideInput').value = decoded.side;
                     processDeck();
                     return;
                 } catch (e) {
@@ -165,31 +183,15 @@
                 }
             }
 
-            const savedDeck = localStorage.getItem('yugiproxy_last_deck');
-            if (savedDeck) {
-                document.getElementById('deckInput').value = savedDeck;
-            }
+            // Carica dal localStorage se presente
+            if (localStorage.getItem('yugiproxy_main')) document.getElementById('mainInput').value = localStorage.getItem('yugiproxy_main');
+            if (localStorage.getItem('yugiproxy_extra')) document.getElementById('extraInput').value = localStorage.getItem('yugiproxy_extra');
+            if (localStorage.getItem('yugiproxy_side')) document.getElementById('sideInput').value = localStorage.getItem('yugiproxy_side');
         });
 
-        async function processDeck() {
-            const text = document.getElementById('deckInput').value.trim();
-            const lang = document.getElementById('langSelect').value;
-            const statusMsg = document.getElementById('statusMessage');
-            const grid = document.getElementById('cardGrid');
-            const countBadge = document.getElementById('cardCountBadge');
-            const exportPanel = document.getElementById('exportPanel');
-            const statsBox = document.getElementById('statsBox');
-
-            if (!text) {
-                alert('Inserisci almeno una carta nella lista!');
-                return;
-            }
-
-            localStorage.setItem('yugiproxy_last_deck', text);
-
+        function parseTextarea(text) {
             const lines = text.split('\n');
-            let parsedItems = [];
-
+            let items = [];
             for (let line of lines) {
                 line = line.trim();
                 if (!line || line.startsWith('#') || line.startsWith('//')) continue;
@@ -208,11 +210,40 @@
                     qty = parseInt(trailingMatch[2]);
                 }
 
-                parsedItems.push({ name: cardName, qty: qty });
+                items.push({ name: cardName, qty: qty });
+            }
+            return items;
+        }
+
+        async function processDeck() {
+            const mainText = document.getElementById('mainInput').value.trim();
+            const extraText = document.getElementById('extraInput').value.trim();
+            const sideText = document.getElementById('sideInput').value.trim();
+            const lang = document.getElementById('langSelect').value;
+            
+            const statusMsg = document.getElementById('statusMessage');
+            const grid = document.getElementById('cardGrid');
+            const countBadge = document.getElementById('cardCountBadge');
+            const exportPanel = document.getElementById('exportPanel');
+            const statsBox = document.getElementById('statsBox');
+
+            if (!mainText && !extraText && !sideText) {
+                alert('Inserisci almeno una carta in una delle sezioni!');
+                return;
             }
 
-            if (parsedItems.length === 0) {
-                alert('Nessuna carta valida trovata nella lista.');
+            // Salva nel browser
+            localStorage.setItem('yugiproxy_main', mainText);
+            localStorage.setItem('yugiproxy_extra', extraText);
+            localStorage.setItem('yugiproxy_side', sideText);
+
+            const parsedMain = parseTextarea(mainText);
+            const parsedExtra = parseTextarea(extraText);
+            const parsedSide = parseTextarea(sideText);
+            const allParsed = [...parsedMain, ...parsedExtra, ...parsedSide];
+
+            if (allParsed.length === 0) {
+                alert('Nessuna carta valida trovata nelle liste.');
                 return;
             }
 
@@ -228,7 +259,7 @@
             let countSpells = 0;
             let countTraps = 0;
 
-            for (let item of parsedItems) {
+            for (let item of allParsed) {
                 try {
                     const encodedName = encodeURIComponent(item.name);
                     let response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodedName}&language=${lang}`);
@@ -306,12 +337,17 @@
         }
 
         function shareDeck() {
-            const text = document.getElementById('deckInput').value.trim();
-            if (!text) {
-                alert('Inserisci prima una decklist da condividere!');
+            const main = document.getElementById('mainInput').value.trim();
+            const extra = document.getElementById('extraInput').value.trim();
+            const side = document.getElementById('sideInput').value.trim();
+
+            if (!main && !extra && !side) {
+                alert('Inserisci prima almeno una sezione da condividere!');
                 return;
             }
-            const encoded = btoa(encodeURIComponent(text));
+
+            const deckData = JSON.stringify({ main, extra, side });
+            const encoded = btoa(encodeURIComponent(deckData));
             const shareUrl = `${window.location.origin}${window.location.pathname}?deck=${encoded}`;
             
             navigator.clipboard.writeText(shareUrl).then(() => {
